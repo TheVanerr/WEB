@@ -67,47 +67,47 @@
         <table class="w-full text-sm text-left">
           <thead class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wide">
             <tr>
-              <th class="px-4 sm:px-6 py-4 font-medium">
-                <span class="inline-flex items-center">
+              <th class="px-4 sm:px-6 py-4 font-medium text-center">
+                <span class="inline-flex items-center justify-center">
                   Doküman Kodu
                   <button type="button" class="filter-btn ml-1" data-col="kod" title="Filtrele">
                     <span class="filter-triangle"></span>
                   </button>
                 </span>
               </th>
-              <th class="px-4 sm:px-6 py-4 font-medium">
-                <span class="inline-flex items-center">
+              <th class="px-4 sm:px-6 py-4 font-medium text-center">
+                <span class="inline-flex items-center justify-center">
                   Doküman Adı
                   <button type="button" class="filter-btn ml-1" data-col="adi" title="Filtrele">
                     <span class="filter-triangle"></span>
                   </button>
                 </span>
               </th>
-              <th class="px-4 sm:px-6 py-4 font-medium">
-                <span class="inline-flex items-center">
+              <th class="px-4 sm:px-6 py-4 font-medium text-center">
+                <span class="inline-flex items-center justify-center">
                   Doküman Türü
                   <button type="button" class="filter-btn ml-1" data-col="tur" title="Filtrele">
                     <span class="filter-triangle"></span>
                   </button>
                 </span>
               </th>
-              <th class="px-4 sm:px-6 py-4 font-medium">
-                <span class="inline-flex items-center">
+              <th class="px-4 sm:px-6 py-4 font-medium text-center">
+                <span class="inline-flex items-center justify-center">
                   Versiyon
                   <button type="button" class="filter-btn ml-1" data-col="versiyon" title="Filtrele">
                     <span class="filter-triangle"></span>
                   </button>
                 </span>
               </th>
-              <th class="px-4 sm:px-6 py-4 font-medium">
-                <span class="inline-flex items-center">
+              <th class="px-4 sm:px-6 py-4 font-medium text-center">
+                <span class="inline-flex items-center justify-center">
                   Dosya
                   <button type="button" class="filter-btn ml-1" data-col="dosya" title="Filtrele">
                     <span class="filter-triangle"></span>
                   </button>
                 </span>
               </th>
-              <th class="px-4 sm:px-6 py-4 font-medium text-right">İşlem</th>
+              <th class="px-4 sm:px-6 py-4 font-medium text-center">İşlem</th>
             </tr>
           </thead>
           <tbody id="documentTableBody" class="divide-y divide-gray-100 text-gray-800"></tbody>
@@ -495,15 +495,15 @@
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50 transition-colors';
         row.innerHTML =
-          '<td class="px-4 sm:px-6 py-4 font-mono text-xs sm:text-sm font-medium text-primary">' + escapeHtml(doc.dokumanKodu) + '</td>' +
-          '<td class="px-4 sm:px-6 py-4">' + escapeHtml(doc.dokumanAdi) + '</td>' +
-          '<td class="px-4 sm:px-6 py-4">' + escapeHtml(doc.dokumanTuru) + '</td>' +
-          '<td class="px-4 sm:px-6 py-4">V' + escapeHtml(doc.versiyon) + '</td>' +
-          '<td class="px-4 sm:px-6 py-4">' +
+          '<td class="px-4 sm:px-6 py-6 font-mono text-xs sm:text-sm font-medium text-primary text-center">' + escapeHtml(doc.dokumanKodu) + '</td>' +
+          '<td class="px-4 sm:px-6 py-6 text-center">' + escapeHtml(doc.dokumanAdi) + '</td>' +
+          '<td class="px-4 sm:px-6 py-6 text-center">' + escapeHtml(doc.dokumanTuru) + '</td>' +
+          '<td class="px-4 sm:px-6 py-6 text-center">V' + escapeHtml(doc.versiyon) + '</td>' +
+          '<td class="px-4 sm:px-6 py-6 text-center">' +
             '<span class="text-gray-700">' + escapeHtml(doc.dosyaAdi) + '</span>' +
             '<span class="block text-xs text-gray-400">' + escapeHtml(doc.dosyaBoyutu) + '</span>' +
           '</td>' +
-          '<td class="px-4 sm:px-6 py-4 text-right">' +
+          '<td class="px-4 sm:px-6 py-6 text-right">' +
             '<div class="inline-flex items-center gap-2">' +
               '<button type="button" class="btn-indir inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-primary border border-primary/30 hover:bg-primary hover:text-white transition-all duration-200" data-index="' + index + '">' +
                 'İndir' +

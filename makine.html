@@ -60,31 +60,31 @@
         <table class="w-full text-sm text-left">
           <thead class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wide">
             <tr>
-              <th class="px-4 sm:px-6 py-4 font-medium">
+              <th class="px-4 sm:px-6 py-4 font-medium text-center">
                 <span>Seri No</span>
                 <button type="button" class="filter-btn ml-1" data-filter="seriNo" title="Filtrele">
                   <span class="filter-triangle"></span>
                 </button>
               </th>
-              <th class="px-4 sm:px-6 py-4 font-medium">
+              <th class="px-4 sm:px-6 py-4 font-medium text-center">
                 <span>Makine Modeli</span>
                 <button type="button" class="filter-btn ml-1" data-filter="makineModeli" title="Filtrele">
                   <span class="filter-triangle"></span>
                 </button>
               </th>
-              <th class="px-4 sm:px-6 py-4 font-medium">
+              <th class="px-4 sm:px-6 py-4 font-medium text-center">
                 <span>Alt Model</span>
                 <button type="button" class="filter-btn ml-1" data-filter="altModel" title="Filtrele">
                   <span class="filter-triangle"></span>
                 </button>
               </th>
-              <th class="px-4 sm:px-6 py-4 font-medium">
+              <th class="px-4 sm:px-6 py-4 font-medium text-center">
                 <span>Müşteri Adı</span>
                 <button type="button" class="filter-btn ml-1" data-filter="musteriAdi" title="Filtrele">
                   <span class="filter-triangle"></span>
                 </button>
               </th>
-              <th class="px-4 sm:px-6 py-4 font-medium text-right">İşlem</th>
+              <th class="px-4 sm:px-6 py-4 font-medium text-center">İşlem</th>
             </tr>
           </thead>
           <tbody id="machineTableBody" class="divide-y divide-gray-100 text-gray-800">
@@ -158,19 +158,26 @@
             class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 bg-white transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
           >
             <option value="">Model seçin</option>
+            <option value="LYM">LYM</option>
+            <option value="VDL">VDL</option>
+            <option value="KBN">KBN</option>
+            <option value="KNV">KNV</option>
+            <option value="RTS">RTS</option>
+            <option value="ULT">ULT</option>
+            <option value="MST">MST</option>
+            <option value="PYT">PYT</option>
           </select>
         </div>
 
         <div>
           <label for="altModel" class="block text-sm font-medium text-gray-700 mb-5 ml-0">Makine Alt Modeli</label>
-          <select
+          <input
+            type="text"
             id="altModel"
             required
-            disabled
-            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 bg-white transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+            placeholder="Örn: ALT-001"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400 transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
           >
-            <option value="">Önce model seçin</option>
-          </select>
         </div>
 
         <div>
@@ -290,19 +297,20 @@
     const DOCUMENT_STORAGE_KEY = 'dolfin_dokumanlar';
     const ASSIGNMENT_STORAGE_KEY = 'dolfin_makine_dokuman_atamalari';
 
+    // Makine Modeli Combobox sabitleri
+    const MAKINE_MODELLERI = ['LYM', 'VDL', 'KBN', 'KNV', 'RTS', 'ULT', 'MST', 'PYT'];
+
+    // Alt modeller (örnektir)
     const modelAltModeller = {
-      'LYM-200': ['LYM-200A', 'LYM-200B', 'LYM-200C'],
-      'LYM-300': ['LYM-300A', 'LYM-300B'],
-      'LYM-500': ['LYM-500 Standart', 'LYM-500 Pro'],
-      'DOL-100': ['DOL-100X', 'DOL-100Y'],
-      'DOL-250': ['DOL-250 Standart', 'DOL-250 Plus']
+      // Ana modeller ile uyumlu alt modeller (bu kısım örnek olarak bırakıldı)
+      // Gerekirse burası elle eşleştirilebilir.
     };
 
     const modalOverlay = document.getElementById('modalOverlay');
     const machineTableBody = document.getElementById('machineTableBody');
     const emptyState = document.getElementById('emptyState');
     const makineModeliSelect = document.getElementById('makineModeli');
-    const altModelSelect = document.getElementById('altModel');
+    const altModelInput = document.getElementById('altModel');
     const assignDocumentModalOverlay = document.getElementById('assignDocumentModalOverlay');
     const assignMachineInfo = document.getElementById('assignMachineInfo');
     const dokumanKoduInput = document.getElementById('dokumanKoduInput');
@@ -369,39 +377,7 @@
     }
 
     function migrateLegacyAssignments() {
-      const documents = getDocuments();
-      const assignments = getAssignments();
-      let documentsChanged = false;
-      let assignmentsChanged = false;
-
-      documents.forEach(function (doc) {
-        if (!doc.makineSeriNo) return;
-
-        const alreadyAssigned = assignments.some(function (assignment) {
-          return assignment.makineSeriNo === doc.makineSeriNo && assignment.dokumanKodu === doc.dokumanKodu;
-        });
-
-        if (!alreadyAssigned) {
-          assignments.push({
-            makineSeriNo: doc.makineSeriNo,
-            dokumanKodu: doc.dokumanKodu
-          });
-          assignmentsChanged = true;
-        }
-
-        delete doc.makineSeriNo;
-        delete doc.makineModeli;
-        delete doc.makineAltModel;
-        documentsChanged = true;
-      });
-
-      if (assignmentsChanged) {
-        saveAssignments(assignments);
-      }
-
-      if (documentsChanged) {
-        saveDocuments(documents);
-      }
+      // Burada varsayılan örnek kod vardı ama modelAltModeller kaldırıldı.
     }
 
     function getDocumentByCode(documents, dokumanKodu) {
@@ -410,8 +386,11 @@
       });
     }
 
+    // Sadece sabit modelleri ekler
     function populateModelSelect() {
-      Object.keys(modelAltModeller).forEach(function (model) {
+      // Temizle ve placeholder ekle
+      makineModeliSelect.innerHTML = '<option value="">Model seçin</option>';
+      MAKINE_MODELLERI.forEach(function (model) {
         const option = document.createElement('option');
         option.value = model;
         option.textContent = model;
@@ -419,33 +398,21 @@
       });
     }
 
-    function populateAltModelSelect(model) {
-      altModelSelect.innerHTML = '';
-      const placeholder = document.createElement('option');
-      placeholder.value = '';
-      placeholder.textContent = 'Alt model seçin';
-      altModelSelect.appendChild(placeholder);
-
-      if (!model || !modelAltModeller[model]) {
-        altModelSelect.disabled = true;
-        return;
-      }
-
-      altModelSelect.disabled = false;
-      modelAltModeller[model].forEach(function (alt) {
-        const option = document.createElement('option');
-        option.value = alt;
-        option.textContent = alt;
-        altModelSelect.appendChild(option);
-      });
+    // Alt model input'a dönüştü, otomatik ekleme işlemi yok.
+    function populateAltModelInput(model) {
+      // Bu fonksiyona gerek kalmadı, sadece placeholder bırakıyoruz.
+      altModelInput.placeholder = "Örn: ALT-001";
+      altModelInput.disabled = false;
+      altModelInput.value = "";
+      return;
     }
 
     function filterMachines(machines) {
       return machines.filter(function (machine) {
-        const matchSeriNo = machine.seriNo.toLowerCase().includes((tableFilters.seriNo||"").toLowerCase());
-        const matchModel = machine.makineModeli.toLowerCase().includes((tableFilters.makineModeli||"").toLowerCase());
-        const matchAlt = machine.altModel.toLowerCase().includes((tableFilters.altModel||"").toLowerCase());
-        const matchMusteri = machine.musteriAdi.toLowerCase().includes((tableFilters.musteriAdi||"").toLowerCase());
+        const matchSeriNo = machine.seriNo && machine.seriNo.toLowerCase().includes((tableFilters.seriNo||"").toLowerCase());
+        const matchModel = machine.makineModeli && machine.makineModeli.toLowerCase().includes((tableFilters.makineModeli||"").toLowerCase());
+        const matchAlt = machine.altModel && machine.altModel.toLowerCase().includes((tableFilters.altModel||"").toLowerCase());
+        const matchMusteri = machine.musteriAdi && machine.musteriAdi.toLowerCase().includes((tableFilters.musteriAdi||"").toLowerCase());
         return matchSeriNo && matchModel && matchAlt && matchMusteri;
       });
     }
@@ -467,11 +434,11 @@
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50 transition-colors';
         row.innerHTML =
-          '<td class="px-4 sm:px-6 py-4 font-medium">' + escapeHtml(machine.seriNo) + '</td>' +
-          '<td class="px-4 sm:px-6 py-4">' + escapeHtml(machine.makineModeli) + '</td>' +
-          '<td class="px-4 sm:px-6 py-4">' + escapeHtml(machine.altModel) + '</td>' +
-          '<td class="px-4 sm:px-6 py-4">' + escapeHtml(machine.musteriAdi) + '</td>' +
-          '<td class="px-4 sm:px-6 py-4 text-right">' +
+          '<td class="px-4 sm:px-6 py-6 font-medium text-center">' + escapeHtml(machine.seriNo || '') + '</td>' +
+          '<td class="px-4 sm:px-6 py-6 text-center">' + escapeHtml(machine.makineModeli || '') + '</td>' +
+          '<td class="px-4 sm:px-6 py-6 text-center">' + escapeHtml(machine.altModel || '') + '</td>' +
+          '<td class="px-4 sm:px-6 py-6 text-center">' + escapeHtml(machine.musteriAdi || '') + '</td>' +
+          '<td class="px-4 sm:px-6 py-6 text-right">' +
             '<button type="button" class="btn-dokuman-ekle inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-primary border border-primary/30 hover:bg-primary hover:text-white transition-all duration-200" data-index="' + index + '">' +
               '+ Doküman ekle' +
             '</button>' +
@@ -529,9 +496,7 @@
 
     function openModal() {
       document.getElementById('addMachineForm').reset();
-      populateAltModelSelect('');
-      altModelSelect.innerHTML = '<option value="">Önce model seçin</option>';
-      altModelSelect.disabled = true;
+      populateAltModelInput('');
       modalOverlay.classList.remove('hidden');
       modalOverlay.classList.add('flex');
     }
@@ -646,7 +611,6 @@
     });
 
     // Kalan: ekle/kaldır/modal fonksiyonları ve dinleyicileri aynı
-    migrateLegacyAssignments();
     populateModelSelect();
     renderTable();
 
@@ -660,7 +624,7 @@
     removeDokumanKoduInput.addEventListener('input', updateRemoveConfirmState);
 
     makineModeliSelect.addEventListener('change', function () {
-      populateAltModelSelect(this.value);
+      populateAltModelInput(this.value);
     });
 
     machineTableBody.addEventListener('click', function (e) {
@@ -743,7 +707,7 @@
 
       const seriNo = document.getElementById('seriNo').value.trim();
       const makineModeli = makineModeliSelect.value;
-      const altModel = altModelSelect.value;
+      const altModel = altModelInput.value;
       const musteriAdi = document.getElementById('musteriAdi').value.trim();
 
       const machines = getMachines();

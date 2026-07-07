@@ -375,10 +375,10 @@
           const tr = document.createElement('tr');
           tr.className = 'hover:bg-gray-50 transition-colors';
           tr.innerHTML =
-            '<td class="px-4 sm:px-6 py-4 font-mono text-xs sm:text-sm font-medium text-primary">' + escapeHtml(doc.dokumanKodu) + '</td>' +
-            '<td class="px-4 sm:px-6 py-4">' + escapeHtml(doc.dokumanAdi) + '</td>' +
-            '<td class="px-4 sm:px-6 py-4">' + escapeHtml(doc.dokumanTuru) + '</td>' +
-            '<td class="px-4 sm:px-6 py-4">V' + escapeHtml(doc.versiyon) + '</td>' +
+            '<td class="px-4 sm:px-6 py-4 font-mono text-xs sm:text-sm font-medium text-primary text-center">' + escapeHtml(doc.dokumanKodu) + '</td>' +
+            '<td class="px-4 sm:px-6 py-4 text-center">' + escapeHtml(doc.dokumanAdi) + '</td>' +
+            '<td class="px-4 sm:px-6 py-4 text-center">' + escapeHtml(doc.dokumanTuru) + '</td>' +
+            '<td class="px-4 sm:px-6 py-4 text-center">V' + escapeHtml(doc.versiyon) + '</td>' +
             '<td class="px-4 sm:px-6 py-4 text-right">' +
               '<button type="button" class="btn-indir inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-primary border border-primary/30 hover:bg-primary hover:text-white transition-all duration-200" data-kod="' + escapeHtml(doc.dokumanKodu) + '">' +
                 'İndir' +
