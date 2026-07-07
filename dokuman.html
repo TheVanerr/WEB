@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doküman</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#ff0000',
+            'primary-hover': '#e60000',
+            'primary-focus': '#cc0000',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    input:focus, select:focus { outline: none; }
+    .filter-triangle {
+      display: inline-block;
+      margin-left: 4px;
+      margin-bottom: 1px;
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 7px solid #666;
+      vertical-align: middle;
+    }
+    .filter-btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 0;
+      height: 1.2em;
+      line-height: 1.1em;
+      vertical-align: middle;
+    }
+    .filter-btn-active .filter-triangle {
+      border-top-color: #ff0000;
+    }
+    th {
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body class="bg-white p-4 sm:p-6 lg:p-8">
+
+  <div class="max-w-6xl mx-auto">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <h2 class="text-xl font-semibold text-gray-800 flex items-center h-[44px] pl-0">DOKÜMAN YÖNETİMİ</h2>
+
+      <button
+        type="button"
+        id="openModalBtn"
+        class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover active:bg-primary-focus text-white text-sm font-medium shadow-lg shadow-primary/25 transition-all duration-200"
+      >
+        + Doküman Ekle
+      </button>
+    </div>
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+          <thead class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wide">
+            <tr>
+              <th class="px-4 sm:px-6 py-4 font-medium">
+                <span class="inline-flex items-center">
+                  Doküman Kodu
+                  <button type="button" class="filter-btn ml-1" data-col="kod" title="Filtrele">
+                    <span class="filter-triangle"></span>
+                  </button>
+                </span>
+              </th>
+              <th class="px-4 sm:px-6 py-4 font-medium">
+                <span class="inline-flex items-center">
+                  Doküman Adı
+                  <button type="button" class="filter-btn ml-1" data-col="adi" title="Filtrele">
+                    <span class="filter-triangle"></span>
+                  </button>
+                </span>
+              </th>
+              <th class="px-4 sm:px-6 py-4 font-medium">
+                <span class="inline-flex items-center">
+                  Doküman Türü
+                  <button type="button" class="filter-btn ml-1" data-col="tur" title="Filtrele">
+                    <span class="filter-triangle"></span>
+                  </button>
+                </span>
+              </th>
+              <th class="px-4 sm:px-6 py-4 font-medium">
+                <span class="inline-flex items-center">
+                  Versiyon
+                  <button type="button" class="filter-btn ml-1" data-col="versiyon" title="Filtrele">
+                    <span class="filter-triangle"></span>
+                  </button>
+                </span>
+              </th>
+              <th class="px-4 sm:px-6 py-4 font-medium">
+                <span class="inline-flex items-center">
+                  Dosya
+                  <button type="button" class="filter-btn ml-1" data-col="dosya" title="Filtrele">
+                    <span class="filter-triangle"></span>
+                  </button>
+                </span>
+              </th>
+              <th class="px-4 sm:px-6 py-4 font-medium text-right">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="documentTableBody" class="divide-y divide-gray-100 text-gray-800"></tbody>
+        </table>
+      </div>
+      <p id="emptyState" class="hidden px-6 py-12 text-center text-gray-400 text-sm">
+        Henüz kayıtlı doküman yok. "Doküman Ekle" ile yeni kayıt oluşturun.
+      </p>
+    </div>
+  </div>
+
+  <!-- Filter Modal -->
+  <div id="filterModalOverlay" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/40">
+    <div class="absolute inset-0" id="filterModalBackdrop"></div>
+    <div class="relative max-w-xs w-full mx-auto bg-white rounded-2xl shadow-lg p-6">
+      <h3 class="text-base font-semibold text-gray-800 mb-3"><span id="filterModalTitle">Filtrele</span></h3>
+      <form id="filterModalForm" autocomplete="off" class="space-y-5">
+        <input type="hidden" id="activeFilterKey" value="">
+        <div>
+          <div id="filterModalContent"></div>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" id="filterModalResetBtn" class="flex-1 py-2 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-all duration-200">
+            Temizle
+          </button>
+          <button type="button" id="filterModalOkBtn" class="flex-1 py-2 px-3 rounded-xl bg-primary hover:bg-primary-hover text-white font-medium shadow-lg shadow-primary/25 transition-all duration-200">
+            Uygula
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Document Modal -->
+  <div id="modalOverlay" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div id="modalBackdrop" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+      <h3 class="text-xl font-semibold text-gray-800 mb-6">Yeni Doküman Ekle</h3>
+      <form id="addDocumentForm" class="space-y-4">
+        <div>
+          <label for="dokumanAdi" class="block text-sm font-medium text-gray-700 mb-5 ml-0">Doküman Adı</label>
+          <input
+            type="text"
+            id="dokumanAdi"
+            required
+            placeholder="Örn: Motor Kullanım Kılavuzu"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400 transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+        </div>
+        <div>
+          <label for="dokumanTuru" class="block text-sm font-medium text-gray-700 mb-5 ml-0">Doküman Türü</label>
+          <select
+            id="dokumanTuru"
+            required
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 bg-white transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="">Tür seçin</option>
+          </select>
+        </div>
+        <div>
+          <label for="versiyon" class="block text-sm font-medium text-gray-700 mb-5 ml-0">Versiyon Numarası</label>
+          <input
+            type="text"
+            id="versiyon"
+            required
+            placeholder="Örn: 1.0, 1.1"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400 transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-5 ml-0">Doküman Kodu</label>
+          <div
+            id="dokumanKoduPreview"
+            class="w-full px-4 py-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 text-gray-500 text-sm font-mono"
+          >
+            Alanları doldurun...
+          </div>
+        </div>
+        <div>
+          <label for="dosya" class="block text-sm font-medium text-gray-700 mb-5 ml-0">Doküman Dosyası</label>
+          <input
+            type="file"
+            id="dosya"
+            required
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+          <p class="text-xs text-gray-400 mt-1">PDF, Word, Excel veya görsel dosyaları yükleyebilirsiniz.</p>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button
+            type="button"
+            id="cancelBtn"
+            class="flex-1 py-3 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-all duration-200"
+          >
+            İptal
+          </button>
+          <button
+            type="submit"
+            class="flex-1 py-3 px-4 rounded-xl bg-primary hover:bg-primary-hover active:bg-primary-focus text-white font-medium shadow-lg shadow-primary/25 transition-all duration-200"
+          >
+            Tamam
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Modal -->
+  <div id="deleteModalOverlay" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div id="deleteModalBackdrop" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+      <h3 class="text-xl font-semibold text-gray-800 mb-2">Dokümanı Sil</h3>
+      <p class="text-sm text-gray-500 mb-4">Bu işlem geri alınamaz. Silmek için doküman kodunu tam olarak yazın.</p>
+      <form id="deleteDocumentForm" class="space-y-4">
+        <div>
+          <label for="deleteKodInput" class="block text-sm font-medium text-gray-700 mb-5 ml-0">Doküman Kodu</label>
+          <input
+            type="text"
+            id="deleteKodInput"
+            required
+            autocomplete="off"
+            placeholder="Doküman kodunu yazın"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400 font-mono transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+          <p id="deleteKodHint" class="text-xs text-gray-400 mt-1.5 font-mono"></p>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button
+            type="button"
+            id="deleteCancelBtn"
+            class="flex-1 py-3 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-all duration-200"
+          >
+            İptal
+          </button>
+          <button
+            type="submit"
+            id="deleteConfirmBtn"
+            disabled
+            class="flex-1 py-3 px-4 rounded-xl bg-primary hover:bg-primary-hover active:bg-primary-focus text-white font-medium shadow-lg shadow-primary/25 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+          >
+            Tamam
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'dolfin_dokumanlar';
+    const ASSIGNMENT_STORAGE_KEY = 'dolfin_makine_dokuman_atamalari';
+
+    const dokumanTurleri = {
+      'Kullanım Kılavuzu': 'KK',
+      'Elektrik Şeması': 'ES',
+      'P&ID Diyagramı': 'PD',
+      'Garanti Kartı': 'GK',
+      'CE Belgesi': 'CB',
+      'Risk Analizi': 'RA'
+    };
+
+    const modalOverlay = document.getElementById('modalOverlay');
+    const documentTableBody = document.getElementById('documentTableBody');
+    const emptyState = document.getElementById('emptyState');
+    const dokumanTuruSelect = document.getElementById('dokumanTuru');
+    const versiyonInput = document.getElementById('versiyon');
+    const dokumanKoduPreview = document.getElementById('dokumanKoduPreview');
+    const deleteModalOverlay = document.getElementById('deleteModalOverlay');
+    const deleteKodInput = document.getElementById('deleteKodInput');
+    const deleteKodHint = document.getElementById('deleteKodHint');
+    const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
+
+    // Filter modal refs
+    const filterModalOverlay = document.getElementById('filterModalOverlay');
+    const filterModalBackdrop = document.getElementById('filterModalBackdrop');
+    const filterModalForm = document.getElementById('filterModalForm');
+    const filterModalTitle = document.getElementById('filterModalTitle');
+    const activeFilterKeyInput = document.getElementById('activeFilterKey');
+    const filterModalContent = document.getElementById('filterModalContent');
+    const filterModalResetBtn = document.getElementById('filterModalResetBtn');
+    const filterModalOkBtn = document.getElementById('filterModalOkBtn');
+
+    let filterValues = {
+      kod: null,
+      adi: null,
+      tur: null,
+      versiyon: null,
+      dosya: null
+    };
+    let deleteTargetIndex = -1;
+    let deleteTargetKod = '';
+    let filterOptionsCache = {};
+    let lastFilterCol = null;
+
+    function getDocuments() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveDocuments(documents) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
+    }
+
+    function getAssignments() {
+      try {
+        return JSON.parse(localStorage.getItem(ASSIGNMENT_STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveAssignments(assignments) {
+      localStorage.setItem(ASSIGNMENT_STORAGE_KEY, JSON.stringify(assignments));
+    }
+
+    function getSelectedMachine() {
+      try {
+        return JSON.parse(sessionStorage.getItem('dolfin_secili_makine')) || null;
+      } catch {
+        return null;
+      }
+    }
+
+    function populateTurSelect() {
+      Object.keys(dokumanTurleri).forEach(function (tur) {
+        const option = document.createElement('option');
+        option.value = tur;
+        option.textContent = tur;
+        dokumanTuruSelect.appendChild(option);
+      });
+    }
+
+    function slugifyName(name) {
+      return name
+        .trim()
+        .toLocaleUpperCase('tr-TR')
+        .replace(/[^A-Z0-9ÇĞİÖŞÜ\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .substring(0, 30) || 'DOKUMAN';
+    }
+
+    function generateDokumanKodu(adi, tur, versiyon) {
+      if (!adi || !tur || !versiyon) return '';
+      const turKodu = dokumanTurleri[tur] || 'XX';
+      const adSlug = slugifyName(adi);
+      return turKodu + '-' + adSlug + '-V' + versiyon;
+    }
+
+    function updateKodPreview() {
+      const adi = document.getElementById('dokumanAdi').value;
+      const tur = dokumanTuruSelect.value;
+      const versiyon = versiyonInput.value;
+      const kod = generateDokumanKodu(adi, tur, versiyon);
+
+      if (kod) {
+        dokumanKoduPreview.textContent = kod;
+        dokumanKoduPreview.classList.remove('text-gray-500');
+        dokumanKoduPreview.classList.add('text-gray-800', 'font-semibold');
+      } else {
+        dokumanKoduPreview.textContent = 'Alanları doldurun...';
+        dokumanKoduPreview.classList.add('text-gray-500');
+        dokumanKoduPreview.classList.remove('text-gray-800', 'font-semibold');
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function getUniqueValues(arr, prop, formatFunc) {
+      // Uniqueness and sorting
+      const seen = {};
+      arr.forEach(obj => {
+        let val = obj[prop];
+        if (formatFunc) val = formatFunc(val, obj);
+        val = val ?? '';
+        seen[val] = true;
+      });
+      return Object.keys(seen).filter(v => v !== '').sort((a, b) => a.localeCompare(b, 'tr'));
+    }
+
+    function getFilterOptions(col) {
+      const allDocuments = getDocuments();
+      let prop = col;
+      if (col === 'versiyon') prop = 'versiyon';
+      if (col === 'kod') prop = 'dokumanKodu';
+      if (col === 'adi') prop = 'dokumanAdi';
+      if (col === 'tur') prop = 'dokumanTuru';
+      if (col === 'dosya') prop = 'dosyaAdi';
+
+      // Cache unique values for the column
+      if (!filterOptionsCache[col] || filterOptionsCache._dirty) {
+        let formatVal = null;
+        if (col === 'versiyon') formatVal = (val) => 'V' + val;
+        filterOptionsCache[col] = getUniqueValues(allDocuments, prop, formatVal);
+      }
+      return filterOptionsCache[col] || [];
+    }
+
+    function showFilterModal(col, btnElem) {
+      lastFilterCol = col;
+      // Build radio list for unique values
+      const opts = getFilterOptions(col);
+      let selectedVal = filterValues[col];
+
+      let html = '';
+      if (opts.length === 0) {
+        html = '<span class="text-gray-400 text-xs">Veri yok</span>';
+      } else {
+        html = '<div class="max-h-44 overflow-y-auto flex flex-col gap-2">';
+        opts.forEach(opt => {
+          const checked = selectedVal === opt ? 'checked' : '';
+          const optId = 'filter-opt-' + col + '-' + btoa(unescape(encodeURIComponent(opt))).replace(/[^a-z0-9]/gi, '');
+          html += `<label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="filterOptRadio" id="${optId}" value="${escapeHtml(opt)}" ${checked} class="rounded text-primary focus:ring-primary/40 border-gray-300">
+            <span class="text-xs">${escapeHtml(opt)}</span>
+          </label>`;
+        });
+        html += '</div>';
+      }
+      filterModalContent.innerHTML = html;
+      filterModalContent.setAttribute('data-col', col);
+
+      filterModalOverlay.classList.remove('hidden');
+      filterModalOverlay.classList.add('flex');
+    }
+
+    function closeFilterModal() {
+      filterModalOverlay.classList.add('hidden');
+      filterModalOverlay.classList.remove('flex');
+      lastFilterCol = null;
+    }
+
+    function renderTable() {
+      const allDocuments = getDocuments();
+      const hasFilter = Object.values(filterValues).some(val => val);
+
+      let filtered = allDocuments.map(function (doc, index) { return { doc: doc, index: index }; }).filter(function (item) {
+        const doc = item.doc;
+        let matches = true;
+        if (filterValues.kod) {
+          matches = matches && (doc.dokumanKodu === filterValues.kod);
+        }
+        if (filterValues.adi) {
+          matches = matches && (doc.dokumanAdi === filterValues.adi);
+        }
+        if (filterValues.tur) {
+          matches = matches && (doc.dokumanTuru === filterValues.tur);
+        }
+        if (filterValues.versiyon) {
+          matches = matches && ('V' + doc.versiyon === filterValues.versiyon);
+        }
+        if (filterValues.dosya) {
+          matches = matches && (doc.dosyaAdi === filterValues.dosya);
+        }
+        return matches;
+      });
+
+      documentTableBody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        emptyState.textContent = hasFilter ? 'Filtreye uygun doküman bulunamadı.' : 'Henüz kayıtlı doküman yok. "Doküman Ekle" ile yeni kayıt oluşturun.';
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      emptyState.textContent = 'Henüz kayıtlı doküman yok. "Doküman Ekle" ile yeni kayıt oluşturun.';
+
+      filtered.forEach(function (item) {
+        const doc = item.doc;
+        const index = item.index;
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50 transition-colors';
+        row.innerHTML =
+          '<td class="px-4 sm:px-6 py-4 font-mono text-xs sm:text-sm font-medium text-primary">' + escapeHtml(doc.dokumanKodu) + '</td>' +
+          '<td class="px-4 sm:px-6 py-4">' + escapeHtml(doc.dokumanAdi) + '</td>' +
+          '<td class="px-4 sm:px-6 py-4">' + escapeHtml(doc.dokumanTuru) + '</td>' +
+          '<td class="px-4 sm:px-6 py-4">V' + escapeHtml(doc.versiyon) + '</td>' +
+          '<td class="px-4 sm:px-6 py-4">' +
+            '<span class="text-gray-700">' + escapeHtml(doc.dosyaAdi) + '</span>' +
+            '<span class="block text-xs text-gray-400">' + escapeHtml(doc.dosyaBoyutu) + '</span>' +
+          '</td>' +
+          '<td class="px-4 sm:px-6 py-4 text-right">' +
+            '<div class="inline-flex items-center gap-2">' +
+              '<button type="button" class="btn-indir inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-primary border border-primary/30 hover:bg-primary hover:text-white transition-all duration-200" data-index="' + index + '">' +
+                'İndir' +
+              '</button>' +
+              '<button type="button" class="btn-sil inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-red-600 border border-red-200 hover:bg-red-600 hover:text-white transition-all duration-200" data-index="' + index + '">' +
+                'Sil' +
+              '</button>' +
+            '</div>' +
+          '</td>';
+        documentTableBody.appendChild(row);
+      });
+    }
+
+    function openModal() {
+      document.getElementById('addDocumentForm').reset();
+      updateKodPreview();
+      modalOverlay.classList.remove('hidden');
+      modalOverlay.classList.add('flex');
+    }
+
+    function closeModal() {
+      modalOverlay.classList.add('hidden');
+      modalOverlay.classList.remove('flex');
+    }
+
+    function openDeleteModal(index, dokumanKodu) {
+      deleteTargetIndex = index;
+      deleteTargetKod = dokumanKodu;
+      deleteKodInput.value = '';
+      deleteKodHint.textContent = 'Beklenen: ' + dokumanKodu;
+      deleteConfirmBtn.disabled = true;
+      deleteModalOverlay.classList.remove('hidden');
+      deleteModalOverlay.classList.add('flex');
+      deleteKodInput.focus();
+    }
+
+    function closeDeleteModal() {
+      deleteTargetIndex = -1;
+      deleteTargetKod = '';
+      deleteModalOverlay.classList.add('hidden');
+      deleteModalOverlay.classList.remove('flex');
+    }
+
+    function updateDeleteConfirmState() {
+      deleteConfirmBtn.disabled = deleteKodInput.value.trim() !== deleteTargetKod;
+    }
+
+    function readFileAsDataUrl(file) {
+      return new Promise(function (resolve, reject) {
+        const reader = new FileReader();
+        reader.onload = function () { resolve(reader.result); };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // INIT
+    populateTurSelect();
+    renderTable();
+
+    // Add Document Modal events
+    document.getElementById('openModalBtn').addEventListener('click', openModal);
+    document.getElementById('cancelBtn').addEventListener('click', closeModal);
+    document.getElementById('modalBackdrop').addEventListener('click', closeModal);
+
+    // Delete Modal events
+    document.getElementById('deleteCancelBtn').addEventListener('click', closeDeleteModal);
+    document.getElementById('deleteModalBackdrop').addEventListener('click', closeDeleteModal);
+    deleteKodInput.addEventListener('input', updateDeleteConfirmState);
+
+    // Kod preview
+    document.getElementById('dokumanAdi').addEventListener('input', updateKodPreview);
+    dokumanTuruSelect.addEventListener('change', updateKodPreview);
+    versiyonInput.addEventListener('input', updateKodPreview);
+
+    // Filter modal logic (event delegation/fixes)
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        filterOptionsCache._dirty = true;
+        showFilterModal(btn.getAttribute('data-col'), btn);
+      });
+    });
+
+    filterModalBackdrop.addEventListener('click', closeFilterModal);
+    window.addEventListener('resize', closeFilterModal);
+    document.body.addEventListener('scroll', closeFilterModal, true);
+
+    filterModalOkBtn.addEventListener('click', function() {
+      if (!lastFilterCol) return closeFilterModal();
+      const checked = filterModalContent.querySelector('input[type=radio]:checked');
+      filterValues[lastFilterCol] = checked ? checked.value : null;
+      closeFilterModal();
+      renderTable();
+    });
+
+    filterModalResetBtn.addEventListener('click', function() {
+      if (lastFilterCol) filterValues[lastFilterCol] = null;
+      closeFilterModal();
+      renderTable();
+    });
+
+    filterModalContent.addEventListener('keydown', function(e) {
+      if (e.key === "Enter") {
+        filterModalOkBtn.click();
+      }
+    });
+    document.addEventListener('click', function(e) {
+      if (!filterModalOverlay.classList.contains('hidden') && !e.target.closest('.filter-btn') && !e.target.closest('#filterModalOverlay .relative')) {
+        closeFilterModal();
+      }
+    });
+
+    // Table events
+    documentTableBody.addEventListener('click', function (e) {
+      const indirBtn = e.target.closest('.btn-indir');
+      if (indirBtn) {
+        const index = parseInt(indirBtn.getAttribute('data-index'), 10);
+        const doc = getDocuments()[index];
+        if (!doc || !doc.dosyaVerisi) return;
+
+        const link = document.createElement('a');
+        link.href = doc.dosyaVerisi;
+        link.download = doc.dosyaAdi;
+        link.click();
+        return;
+      }
+
+      const silBtn = e.target.closest('.btn-sil');
+      if (!silBtn) return;
+
+      const index = parseInt(silBtn.getAttribute('data-index'), 10);
+      const doc = getDocuments()[index];
+      if (!doc) return;
+
+      openDeleteModal(index, doc.dokumanKodu);
+    });
+
+    document.getElementById('deleteDocumentForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      if (deleteKodInput.value.trim() !== deleteTargetKod) return;
+
+      const documents = getDocuments();
+      if (deleteTargetIndex < 0 || deleteTargetIndex >= documents.length) {
+        closeDeleteModal();
+        return;
+      }
+
+      documents.splice(deleteTargetIndex, 1);
+      saveDocuments(documents);
+      renderTable();
+      closeDeleteModal();
+    });
+
+    document.getElementById('addDocumentForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const dokumanAdi = document.getElementById('dokumanAdi').value.trim();
+      const dokumanTuru = dokumanTuruSelect.value;
+      const versiyon = versiyonInput.value.trim();
+      const dosyaInput = document.getElementById('dosya');
+      const dosya = dosyaInput.files[0];
+
+      if (!dosya) {
+        alert('Lütfen bir dosya seçin.');
+        return;
+      }
+
+      if (dosya.size > 3 * 1024 * 1024) {
+        alert('Dosya boyutu 3 MB\'dan küçük olmalıdır.');
+        return;
+      }
+
+      const dokumanKodu = generateDokumanKodu(dokumanAdi, dokumanTuru, versiyon);
+      const documents = getDocuments();
+      const exists = documents.some(function (d) { return d.dokumanKodu === dokumanKodu; });
+
+      if (exists) {
+        alert('Bu doküman kodu zaten kayıtlı. Farklı bir ad veya versiyon seçin.');
+        return;
+      }
+
+      let dosyaVerisi;
+      try {
+        dosyaVerisi = await readFileAsDataUrl(dosya);
+      } catch {
+        alert('Dosya okunamadı. Lütfen tekrar deneyin.');
+        return;
+      }
+
+      const machine = getSelectedMachine();
+      const kayit = {
+        dokumanKodu: dokumanKodu,
+        dokumanAdi: dokumanAdi,
+        dokumanTuru: dokumanTuru,
+        versiyon: versiyon,
+        dosyaAdi: dosya.name,
+        dosyaBoyutu: formatFileSize(dosya.size),
+        dosyaTipi: dosya.type,
+        dosyaVerisi: dosyaVerisi,
+        olusturmaTarihi: new Date().toISOString()
+      };
+
+      documents.push(kayit);
+
+      // After add, the options changed
+      filterOptionsCache._dirty = true;
+
+      if (machine) {
+        const assignments = getAssignments();
+        const alreadyAssigned = assignments.some(function (assignment) {
+          return assignment.makineSeriNo === machine.seriNo && assignment.dokumanKodu === dokumanKodu;
+        });
+
+        if (!alreadyAssigned) {
+          assignments.push({
+            makineSeriNo: machine.seriNo,
+            dokumanKodu: dokumanKodu
+          });
+          saveAssignments(assignments);
+        }
+      }
+
+      saveDocuments(documents);
+      renderTable();
+      closeModal();
+    });
+  </script>
+</body>
+</html>

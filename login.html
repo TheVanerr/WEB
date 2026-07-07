@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOLFIN DOKÜMANTASYON SİSTEMİ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#ff0000',
+            'primary-hover': '#e60000',
+            'primary-focus': '#cc0000',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    input:focus, select:focus { outline: none; }
+    #contentFrame { border: none; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+
+  <!-- ─── GİRİŞ EKRANI ─────────────────────────────────────────── -->
+  <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative w-full max-w-md">
+      <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+        <header class="mb-6 sm:mb-8 text-center">
+          <h1 class="text-base sm:text-lg font-semibold text-primary whitespace-nowrap overflow-hidden text-ellipsis" style="line-height: 1.2;">
+            DOLFIN DOKÜMANTASYON SİSTEMİ
+          </h1>
+        </header>
+        <form id="loginForm" class="space-y-5">
+          <div>
+            <label id="seriNoLabel" for="seriNoInput" class="block text-sm font-medium text-gray-700 mb-2.5 ml-0 transition-colors duration-200">SERİ NO</label>
+            <style>
+              #seriNoInput:focus {
+                border-color: #ff0000 !important;
+                box-shadow: 0 0 0 2px rgba(255,0,0,0.15);
+              }
+              #seriNoInput:focus + #seriNoLabel,
+              #seriNoInput:focus ~ #seriNoLabel {
+                /* fallback for edge cases */
+                color: #ff0000 !important;
+              }
+            </style>
+            <script>
+              // Dynamically update label color on focus/blur for broader browser support
+              document.addEventListener('DOMContentLoaded', function () {
+                var seriNoInput = document.getElementById('seriNoInput');
+                var seriNoLabel = document.getElementById('seriNoLabel');
+                if (seriNoInput && seriNoLabel) {
+                  seriNoInput.addEventListener('focus', function () {
+                    seriNoLabel.classList.add('text-primary');
+                  });
+                  seriNoInput.addEventListener('blur', function () {
+                    seriNoLabel.classList.remove('text-primary');
+                  });
+                }
+              });
+            </script>
+ 
+    
+            <input
+              type="text"
+              id="seriNoInput"
+              placeholder=""
+              autocomplete="off"
+              class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+            >
+          </div>
+          <div>
+            <label id="makineModeliLabel" for="makineModeliInput" class="block text-sm font-medium text-gray-700 mb-2.5 ml-0">MAKİNE MODELİ</label>
+            <style>
+              #makineModeliInput:focus {
+                border-color: #ff0000 !important;
+                box-shadow: 0 0 0 2px rgba(255,0,0,0.15);
+              }
+              #makineModeliInput:focus + #makineModeliLabel,
+              #makineModeliInput:focus ~ #makineModeliLabel {
+                color: #ff0000 !important;
+              }
+            </style>
+            <script>
+              document.addEventListener('DOMContentLoaded', function () {
+                var makineModeliInput = document.getElementById('makineModeliInput');
+                var makineModeliLabel = document.getElementById('makineModeliLabel');
+                if (makineModeliInput && makineModeliLabel) {
+                  makineModeliInput.addEventListener('focus', function () {
+                    makineModeliLabel.classList.add('text-primary');
+                  });
+                  makineModeliInput.addEventListener('blur', function () {
+                    makineModeliLabel.classList.remove('text-primary');
+                  });
+                }
+              });
+            </script>
+  
+      
+            <input
+              type="text"
+              id="makineModeliInput"
+              placeholder=""
+              autocomplete="off"
+              class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+            >
+          </div>
+          <p id="loginError" class="hidden text-sm text-red-500 text-center">Seri no veya makine modeli hatalı.</p>
+          <button
+            type="submit"
+            class="w-full mt-2 py-3 px-4 rounded-xl bg-primary hover:bg-primary-hover active:bg-primary-focus text-white font-medium shadow-lg shadow-primary/25 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2"
+          >
+            Giriş
+          </button>
+        </form>
+        <button
+          type="button"
+          id="helpBtn"
+          class="block w-full mt-5 text-center text-sm text-gray-500 hover:text-primary transition-colors duration-200"
+        >
+          Giriş yapmakta zorlanıyor musunuz? <span class="font-semibold">Yardım alın.</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── YARDIM MODALİ ─────────────────────────────────────────── -->
+  <div id="helpModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6">
+    <div id="helpModalBackdrop" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative w-full max-w-2xl bg-white rounded-2xl shadow-lg p-3 sm:p-8 z-10 min-h-[60vh] sm:min-h-[600px] flex flex-col"
+         style="max-height: 95vh;">
+      <button
+        type="button"
+        id="closeHelpModalBtn"
+        class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Seri Numarası ve Model Bilgisi Nerede Yazar?</h3>
+      <div class="space-y-4 flex-1 flex flex-col">
+        <p class="text-sm text-gray-600">
+          Cihazınızın arkasında veya yan tarafında bulunan ürün etiketinde seri numarası ve makine modeli bilgilerini bulabilirsiniz. Aşağıdaki görselde etiket örneği gösterilmiştir:
+        </p>
+        <div class="border border-gray-100 rounded-xl overflow-hidden bg-gray-50 p-2 sm:p-4 flex justify-center items-center flex-1"
+             style="min-height:180px;">
+          <img
+            src="label.svg"
+            alt="Ürün Etiketi"
+            style="width: 100%; height: 100%; max-width: 100%; max-height: 50vh; object-fit: contain; display:block;"
+            class="h-full w-full m-0 p-0"
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── ADMİN PANELİ ─────────────────────────────────────────── -->
+  <div id="adminScreen" class="hidden min-h-screen bg-gray-50 flex flex-col">
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4">
+          <h1 class="text-lg sm:text-xl font-semibold text-primary">DOLFIN DOKÜMANTASYON SİSTEMİ</h1>
+          <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+            <button type="button" id="btnMakine" data-view="makine.html"
+              class="nav-btn px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 bg-primary text-white shadow-lg shadow-primary/25">
+              Makine
+            </button>
+            <button type="button" id="btnDokuman" data-view="dokuman.html"
+              class="nav-btn px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200">
+              Doküman
+            </button>
+            <!-- Çıkış butonunu diğer butonlar gibi nav-btn class'ıyla label içerisine aldık -->
+            <button type="button" id="adminLogoutBtn"
+              class="nav-btn px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200">
+              Çıkış
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <main class="flex-1 p-4 sm:p-6">
+      <div class="max-w-7xl mx-auto h-full">
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden min-h-[calc(100vh-8rem)]">
+          <iframe id="contentFrame" src="makine.html" title="Yönetim"
+            class="w-full min-h-[calc(100vh-8rem)]"></iframe>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ─── MAKİNE GÖRÜNTÜLEME ────────────────────────────────────── -->
+  <div id="viewerScreen" class="hidden min-h-screen bg-gray-50">
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between py-4">
+          <h1 class="text-lg sm:text-xl font-semibold text-primary">DOLFIN DOKÜMANTASYON SİSTEMİ</h1>
+          <button type="button" id="viewerLogoutBtn"
+            class="px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200">
+            Çıkış
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+      <div class="mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 flex items-center h-[44px] pl-0">MAKİNE BİLGİLERİ</h2>
+      </div>
+
+      <div id="machineInfoCard"
+        class="w-full bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8 flex items-center justify-evenly">
+      </div>
+
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">TANIMLI DOKÜMANLAR</h3>
+
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wide">
+              <tr>
+                <th class="px-4 sm:px-6 py-4 font-medium text-center">Doküman Kodu</th>
+                <th class="px-4 sm:px-6 py-4 font-medium text-center">Doküman Adı</th>
+                <th class="px-4 sm:px-6 py-4 font-medium text-center">Tür</th>
+                <th class="px-4 sm:px-6 py-4 font-medium text-center">Versiyon</th>
+                <th class="px-4 sm:px-6 py-4 font-medium text-center">İndir</th>
+              </tr>
+            </thead>
+            <tbody id="viewerDocTableBody" class="divide-y divide-gray-100 text-gray-800"></tbody>
+          </table>
+        </div>
+        <p id="viewerEmptyState" class="hidden px-6 py-12 text-center text-gray-400 text-sm">
+          Bu makineye tanımlı doküman bulunmuyor.
+        </p>
+      </div>
+    </main>
+  </div>
+  <script>
+    const MACHINE_KEY     = 'dolfin_makineler';
+    const DOCUMENT_KEY    = 'dolfin_dokumanlar';
+    const ASSIGNMENT_KEY  = 'dolfin_makine_dokuman_atamalari';
+
+    function getMachines()    { try { return JSON.parse(localStorage.getItem(MACHINE_KEY)) || []; } catch { return []; } }
+    function getDocuments()   { try { return JSON.parse(localStorage.getItem(DOCUMENT_KEY)) || []; } catch { return []; } }
+    function getAssignments() { try { return JSON.parse(localStorage.getItem(ASSIGNMENT_KEY)) || []; } catch { return []; } }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = String(text || '');
+      return div.innerHTML;
+    }
+
+    function showScreen(name) {
+      ['loginScreen', 'adminScreen', 'viewerScreen'].forEach(function (id) {
+        const el = document.getElementById(id);
+        el.classList.toggle('hidden', id !== name);
+        if (id === 'loginScreen') {
+          el.classList.toggle('fixed', id === name);
+        }
+      });
+    }
+
+    /* ── LOGIN ── */
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const seriNo = document.getElementById('seriNoInput').value.trim();
+      const model  = document.getElementById('makineModeliInput').value.trim();
+      const errEl  = document.getElementById('loginError');
+      errEl.classList.add('hidden');
+
+      if (seriNo.toLowerCase() === 'admin' && model.toLowerCase() === 'dolfindoc') {
+        showScreen('adminScreen');
+        return;
+      }
+
+      const machines = getMachines();
+      const machine  = machines.find(function (m) {
+        return m.seriNo === seriNo && m.makineModeli.toLowerCase() === model.toLowerCase();
+      });
+
+      if (!machine) {
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      loadViewer(machine);
+    });
+
+    /* ── YARDIM MODALİ ── */
+    const helpModal = document.getElementById('helpModal');
+    const closeHelpModalBtn = document.getElementById('closeHelpModalBtn');
+    const helpModalBackdrop = document.getElementById('helpModalBackdrop');
+
+    document.getElementById('helpBtn').addEventListener('click', function () {
+      helpModal.classList.remove('hidden');
+    });
+
+    closeHelpModalBtn.addEventListener('click', function () {
+      helpModal.classList.add('hidden');
+    });
+
+    helpModalBackdrop.addEventListener('click', function () {
+      helpModal.classList.add('hidden');
+    });
+
+    /* ── ADMİN NAV ── */
+    const navButtons    = document.querySelectorAll('.nav-btn');
+    const contentFrame  = document.getElementById('contentFrame');
+    const activeClasses   = ['bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/25'];
+    const inactiveClasses = ['bg-gray-100', 'text-gray-700', 'hover:bg-gray-200'];
+
+    function setActiveBtn(activeBtn) {
+      navButtons.forEach(function (btn) {
+        btn.classList.remove(...activeClasses, ...inactiveClasses);
+        btn.classList.add(...(btn === activeBtn ? activeClasses : inactiveClasses));
+      });
+    }
+
+    navButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        contentFrame.src = btn.getAttribute('data-view');
+        setActiveBtn(btn);
+      });
+    });
+
+    document.getElementById('adminLogoutBtn').addEventListener('click', function () {
+      contentFrame.src = 'makine.html';
+      setActiveBtn(document.getElementById('btnMakine'));
+      document.getElementById('seriNoInput').value = '';
+      document.getElementById('makineModeliInput').value = '';
+      showScreen('loginScreen');
+    });
+
+    /* ── VIEWER ── */
+    document.getElementById('viewerLogoutBtn').addEventListener('click', function () {
+      document.getElementById('seriNoInput').value = '';
+      document.getElementById('makineModeliInput').value = '';
+      showScreen('loginScreen');
+    });
+
+    function loadViewer(machine) {
+      const card = document.getElementById('machineInfoCard');
+      const fields = [
+        { label: 'Seri No',       value: machine.seriNo },
+        { label: 'Makine Modeli', value: machine.makineModeli },
+        { label: 'Alt Model',     value: machine.altModel },
+        { label: 'Müşteri Adı',   value: machine.musteriAdi },
+      ];
+      card.innerHTML = fields.map(function (f) {
+        return '<div class="flex flex-col items-center text-center"><p class="text-xs text-gray-400 mb-2">' + escapeHtml(f.label) + '</p>' +
+               '<p class="text-sm font-semibold text-gray-800">' + escapeHtml(f.value) + '</p></div>';
+      }).join('');
+
+      const assignments = getAssignments().filter(function (a) { return a.makineSeriNo === machine.seriNo; });
+      const documents   = getDocuments();
+      const tbody       = document.getElementById('viewerDocTableBody');
+      const emptyEl     = document.getElementById('viewerEmptyState');
+      tbody.innerHTML   = '';
+
+      if (assignments.length === 0) {
+        emptyEl.classList.remove('hidden');
+      } else {
+        emptyEl.classList.add('hidden');
+        assignments.forEach(function (assignment) {
+          const doc = documents.find(function (d) { return d.dokumanKodu === assignment.dokumanKodu; });
+          if (!doc) return;
+
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-gray-50 transition-colors';
+          tr.innerHTML =
+            '<td class="px-4 sm:px-6 py-4 font-mono text-xs sm:text-sm font-medium text-primary">' + escapeHtml(doc.dokumanKodu) + '</td>' +
+            '<td class="px-4 sm:px-6 py-4">' + escapeHtml(doc.dokumanAdi) + '</td>' +
+            '<td class="px-4 sm:px-6 py-4">' + escapeHtml(doc.dokumanTuru) + '</td>' +
+            '<td class="px-4 sm:px-6 py-4">V' + escapeHtml(doc.versiyon) + '</td>' +
+            '<td class="px-4 sm:px-6 py-4 text-right">' +
+              '<button type="button" class="btn-indir inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-primary border border-primary/30 hover:bg-primary hover:text-white transition-all duration-200" data-kod="' + escapeHtml(doc.dokumanKodu) + '">' +
+                'İndir' +
+              '</button>' +
+            '</td>';
+          tbody.appendChild(tr);
+        });
+      }
+
+      showScreen('viewerScreen');
+    }
+
+    document.getElementById('viewerDocTableBody').addEventListener('click', function (e) {
+      const btn = e.target.closest('.btn-indir');
+      if (!btn) return;
+
+      const documents = getDocuments();
+      const doc = documents.find(function (d) { return d.dokumanKodu === btn.getAttribute('data-kod'); });
+      if (!doc || !doc.dosyaVerisi) return;
+
+      const link = document.createElement('a');
+      link.href = doc.dosyaVerisi;
+      link.download = doc.dosyaAdi;
+      link.click();
+    });
+  </script>
+</body>
+</html>

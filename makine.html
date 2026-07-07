@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Makine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#ff0000',
+            'primary-hover': '#e60000',
+            'primary-focus': '#cc0000',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    input:focus, select:focus { outline: none; }
+    .filter-triangle {
+      display: inline-block;
+      margin-left: 5px;
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 7px solid #666;
+      vertical-align: middle;
+    }
+    .filter-btn-active .filter-triangle {
+      border-top-color: #ff0000;
+    }
+    /* Modal animation/styling tweaks if needed */
+  </style>
+</head>
+<body class="bg-white p-4 sm:p-6 lg:p-8">
+
+  <div class="max-w-6xl mx-auto">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <h2 class="text-xl font-semibold text-gray-800 flex items-center h-[44px] pl-0">MAKİNE YÖNETİMİ</h2>
+
+
+
+      <button
+        type="button"
+        id="openModalBtn"
+        class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover active:bg-primary-focus text-white text-sm font-medium shadow-lg shadow-primary/25 transition-all duration-200"
+        style="height:44px;"
+      >
+        + Makine Ekle
+      </button>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+          <thead class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wide">
+            <tr>
+              <th class="px-4 sm:px-6 py-4 font-medium">
+                <span>Seri No</span>
+                <button type="button" class="filter-btn ml-1" data-filter="seriNo" title="Filtrele">
+                  <span class="filter-triangle"></span>
+                </button>
+              </th>
+              <th class="px-4 sm:px-6 py-4 font-medium">
+                <span>Makine Modeli</span>
+                <button type="button" class="filter-btn ml-1" data-filter="makineModeli" title="Filtrele">
+                  <span class="filter-triangle"></span>
+                </button>
+              </th>
+              <th class="px-4 sm:px-6 py-4 font-medium">
+                <span>Alt Model</span>
+                <button type="button" class="filter-btn ml-1" data-filter="altModel" title="Filtrele">
+                  <span class="filter-triangle"></span>
+                </button>
+              </th>
+              <th class="px-4 sm:px-6 py-4 font-medium">
+                <span>Müşteri Adı</span>
+                <button type="button" class="filter-btn ml-1" data-filter="musteriAdi" title="Filtrele">
+                  <span class="filter-triangle"></span>
+                </button>
+              </th>
+              <th class="px-4 sm:px-6 py-4 font-medium text-right">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="machineTableBody" class="divide-y divide-gray-100 text-gray-800">
+          </tbody>
+        </table>
+      </div>
+      <p id="emptyState" class="hidden px-6 py-12 text-center text-gray-400 text-sm">
+        Henüz kayıtlı makine yok. "Makine Ekle" ile yeni kayıt oluşturun.
+      </p>
+    </div>
+  </div>
+
+  <!-- Filtre Modalı -->
+  <div id="filterModalOverlay" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/40">
+    <div class="absolute inset-0" id="filterModalBackdrop"></div>
+    <div class="relative max-w-xs w-full mx-auto bg-white rounded-2xl shadow-lg p-6">
+      <h3 class="text-base font-semibold text-gray-800 mb-3"><span id="filterModalTitle">Filtrele</span></h3>
+      <form id="filterModalForm" autocomplete="off" class="space-y-5">
+        <input type="hidden" id="activeFilterKey" value="">
+        <div>
+          <input
+            type="text"
+            id="filterModalInput"
+            placeholder="Filtre terimini girin"
+            class="w-full px-3 py-2 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400 text-sm transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+        </div>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            id="filterClearBtn"
+            class="flex-1 py-2 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-all duration-200"
+          >
+            Temizle
+          </button>
+          <button
+            type="submit"
+            class="flex-1 py-2 px-3 rounded-xl bg-primary hover:bg-primary-hover text-white font-medium shadow-lg shadow-primary/25 transition-all duration-200"
+          >
+            Uygula
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Kalan: Ekle/Kaldır/Modal kısımları ve ana script aynı kalacak -->
+  <div id="modalOverlay" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div id="modalBackdrop" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+    <div class="relative w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+      <h3 class="text-xl font-semibold text-gray-800 mb-6">Yeni Makine Ekle</h3>
+
+      <form id="addMachineForm" class="space-y-4">
+        <div>
+          <label for="seriNo" class="block text-sm font-medium text-gray-700 mb-5 ml-0">Seri No</label>
+          <input
+            type="text"
+            id="seriNo"
+            required
+            placeholder="Örn: 123456"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400 transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+        </div>
+
+        <div>
+          <label for="makineModeli" class="block text-sm font-medium text-gray-700 mb-5 ml-0">Makine Modeli</label>
+          <select
+            id="makineModeli"
+            required
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 bg-white transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="">Model seçin</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="altModel" class="block text-sm font-medium text-gray-700 mb-5 ml-0">Makine Alt Modeli</label>
+          <select
+            id="altModel"
+            required
+            disabled
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 bg-white transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:bg-gray-50 disabled:text-gray-400"
+          >
+            <option value="">Önce model seçin</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="musteriAdi" class="block text-sm font-medium text-gray-700 mb-5 ml-0">Müşteri Adı</label>
+          <input
+            type="text"
+            id="musteriAdi"
+            required
+            placeholder="Örn: ABC Makina Ltd."
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400 transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button
+            type="button"
+            id="cancelBtn"
+            class="flex-1 py-3 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-all duration-200"
+          >
+            İptal
+          </button>
+          <button
+            type="submit"
+            class="flex-1 py-3 px-4 rounded-xl bg-primary hover:bg-primary-hover active:bg-primary-focus text-white font-medium shadow-lg shadow-primary/25 transition-all duration-200"
+          >
+            Tamam
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="assignDocumentModalOverlay" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div id="assignDocumentModalBackdrop" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+    <div class="relative w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+      <h3 class="text-xl font-semibold text-gray-800 mb-2">Makineye Doküman Tanımla</h3>
+      <p id="assignMachineInfo" class="text-sm text-gray-500 mb-4"></p>
+
+      <form id="assignDocumentForm" class="space-y-4">
+        <div>
+          <label for="dokumanKoduInput" class="block text-sm font-medium text-gray-700 mb-5 ml-0">Doküman Kodu</label>
+          <input
+            type="text"
+            id="dokumanKoduInput"
+            required
+            autocomplete="off"
+            placeholder="Doküman kodunu yazın"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400 font-mono transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+          <p class="text-xs text-gray-400 mt-1.5">Kod tam eşleşirse doküman bu makinenin altında listelenir.</p>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button
+            type="button"
+            id="assignCancelBtn"
+            class="flex-1 py-3 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-all duration-200"
+          >
+            İptal
+          </button>
+          <button
+            type="submit"
+            class="flex-1 py-3 px-4 rounded-xl bg-primary hover:bg-primary-hover active:bg-primary-focus text-white font-medium shadow-lg shadow-primary/25 transition-all duration-200"
+          >
+            Tamam
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="removeDocumentModalOverlay" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div id="removeDocumentModalBackdrop" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+    <div class="relative w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+      <h3 class="text-xl font-semibold text-gray-800 mb-2">Tanımlı Dokümanı Kaldır</h3>
+      <p class="text-sm text-gray-500 mb-4">Dokümanı makineden kaldırmak için doküman kodunu tam olarak yazın.</p>
+
+      <form id="removeDocumentForm" class="space-y-4">
+        <div>
+          <label for="removeDokumanKoduInput" class="block text-sm font-medium text-gray-700 mb-5 ml-0">Doküman Kodu</label>
+          <input
+            type="text"
+            id="removeDokumanKoduInput"
+            required
+            autocomplete="off"
+            placeholder="Doküman kodunu yazın"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400 font-mono transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+          <p id="removeDokumanKoduHint" class="text-xs text-gray-400 mt-1.5 font-mono"></p>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button
+            type="button"
+            id="removeCancelBtn"
+            class="flex-1 py-3 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-all duration-200"
+          >
+            İptal
+          </button>
+          <button
+            type="submit"
+            id="removeConfirmBtn"
+            disabled
+            class="flex-1 py-3 px-4 rounded-xl bg-primary hover:bg-primary-hover active:bg-primary-focus text-white font-medium shadow-lg shadow-primary/25 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+          >
+            Tamam
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'dolfin_makineler';
+    const DOCUMENT_STORAGE_KEY = 'dolfin_dokumanlar';
+    const ASSIGNMENT_STORAGE_KEY = 'dolfin_makine_dokuman_atamalari';
+
+    const modelAltModeller = {
+      'LYM-200': ['LYM-200A', 'LYM-200B', 'LYM-200C'],
+      'LYM-300': ['LYM-300A', 'LYM-300B'],
+      'LYM-500': ['LYM-500 Standart', 'LYM-500 Pro'],
+      'DOL-100': ['DOL-100X', 'DOL-100Y'],
+      'DOL-250': ['DOL-250 Standart', 'DOL-250 Plus']
+    };
+
+    const modalOverlay = document.getElementById('modalOverlay');
+    const machineTableBody = document.getElementById('machineTableBody');
+    const emptyState = document.getElementById('emptyState');
+    const makineModeliSelect = document.getElementById('makineModeli');
+    const altModelSelect = document.getElementById('altModel');
+    const assignDocumentModalOverlay = document.getElementById('assignDocumentModalOverlay');
+    const assignMachineInfo = document.getElementById('assignMachineInfo');
+    const dokumanKoduInput = document.getElementById('dokumanKoduInput');
+    const removeDocumentModalOverlay = document.getElementById('removeDocumentModalOverlay');
+    const removeDokumanKoduInput = document.getElementById('removeDokumanKoduInput');
+    const removeDokumanKoduHint = document.getElementById('removeDokumanKoduHint');
+    const removeConfirmBtn = document.getElementById('removeConfirmBtn');
+    const filterModalOverlay = document.getElementById('filterModalOverlay');
+    const filterModalInput = document.getElementById('filterModalInput');
+    const filterModalForm = document.getElementById('filterModalForm');
+    const filterModalTitle = document.getElementById('filterModalTitle');
+    const filterClearBtn = document.getElementById('filterClearBtn');
+    const filterModalBackdrop = document.getElementById('filterModalBackdrop');
+    const activeFilterKeyInput = document.getElementById('activeFilterKey');
+
+    let selectedMachineIndex = -1;
+    let removeTargetKod = '';
+    let removeTargetSeriNo = '';
+    let activeFilterKey = '';
+    let openFilterBtn = null;
+
+    // Filtre durumları işte burada tutulur:
+    let tableFilters = {
+      seriNo: "",
+      makineModeli: "",
+      altModel: "",
+      musteriAdi: ""
+    };
+
+    function getMachines() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveMachines(machines) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(machines));
+    }
+
+    function getDocuments() {
+      try {
+        return JSON.parse(localStorage.getItem(DOCUMENT_STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveDocuments(documents) {
+      localStorage.setItem(DOCUMENT_STORAGE_KEY, JSON.stringify(documents));
+    }
+
+    function getAssignments() {
+      try {
+        return JSON.parse(localStorage.getItem(ASSIGNMENT_STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveAssignments(assignments) {
+      localStorage.setItem(ASSIGNMENT_STORAGE_KEY, JSON.stringify(assignments));
+    }
+
+    function migrateLegacyAssignments() {
+      const documents = getDocuments();
+      const assignments = getAssignments();
+      let documentsChanged = false;
+      let assignmentsChanged = false;
+
+      documents.forEach(function (doc) {
+        if (!doc.makineSeriNo) return;
+
+        const alreadyAssigned = assignments.some(function (assignment) {
+          return assignment.makineSeriNo === doc.makineSeriNo && assignment.dokumanKodu === doc.dokumanKodu;
+        });
+
+        if (!alreadyAssigned) {
+          assignments.push({
+            makineSeriNo: doc.makineSeriNo,
+            dokumanKodu: doc.dokumanKodu
+          });
+          assignmentsChanged = true;
+        }
+
+        delete doc.makineSeriNo;
+        delete doc.makineModeli;
+        delete doc.makineAltModel;
+        documentsChanged = true;
+      });
+
+      if (assignmentsChanged) {
+        saveAssignments(assignments);
+      }
+
+      if (documentsChanged) {
+        saveDocuments(documents);
+      }
+    }
+
+    function getDocumentByCode(documents, dokumanKodu) {
+      return documents.find(function (doc) {
+        return doc.dokumanKodu === dokumanKodu;
+      });
+    }
+
+    function populateModelSelect() {
+      Object.keys(modelAltModeller).forEach(function (model) {
+        const option = document.createElement('option');
+        option.value = model;
+        option.textContent = model;
+        makineModeliSelect.appendChild(option);
+      });
+    }
+
+    function populateAltModelSelect(model) {
+      altModelSelect.innerHTML = '';
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Alt model seçin';
+      altModelSelect.appendChild(placeholder);
+
+      if (!model || !modelAltModeller[model]) {
+        altModelSelect.disabled = true;
+        return;
+      }
+
+      altModelSelect.disabled = false;
+      modelAltModeller[model].forEach(function (alt) {
+        const option = document.createElement('option');
+        option.value = alt;
+        option.textContent = alt;
+        altModelSelect.appendChild(option);
+      });
+    }
+
+    function filterMachines(machines) {
+      return machines.filter(function (machine) {
+        const matchSeriNo = machine.seriNo.toLowerCase().includes((tableFilters.seriNo||"").toLowerCase());
+        const matchModel = machine.makineModeli.toLowerCase().includes((tableFilters.makineModeli||"").toLowerCase());
+        const matchAlt = machine.altModel.toLowerCase().includes((tableFilters.altModel||"").toLowerCase());
+        const matchMusteri = machine.musteriAdi.toLowerCase().includes((tableFilters.musteriAdi||"").toLowerCase());
+        return matchSeriNo && matchModel && matchAlt && matchMusteri;
+      });
+    }
+
+    function renderTable() {
+      const machines = filterMachines(getMachines());
+      const documents = getDocuments();
+      const assignments = getAssignments();
+      machineTableBody.innerHTML = '';
+
+      if (machines.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      machines.forEach(function (machine, index) {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50 transition-colors';
+        row.innerHTML =
+          '<td class="px-4 sm:px-6 py-4 font-medium">' + escapeHtml(machine.seriNo) + '</td>' +
+          '<td class="px-4 sm:px-6 py-4">' + escapeHtml(machine.makineModeli) + '</td>' +
+          '<td class="px-4 sm:px-6 py-4">' + escapeHtml(machine.altModel) + '</td>' +
+          '<td class="px-4 sm:px-6 py-4">' + escapeHtml(machine.musteriAdi) + '</td>' +
+          '<td class="px-4 sm:px-6 py-4 text-right">' +
+            '<button type="button" class="btn-dokuman-ekle inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-primary border border-primary/30 hover:bg-primary hover:text-white transition-all duration-200" data-index="' + index + '">' +
+              '+ Doküman ekle' +
+            '</button>' +
+          '</td>';
+        machineTableBody.appendChild(row);
+
+        const machineAssignments = assignments.filter(function (assignment) {
+          return assignment.makineSeriNo === machine.seriNo;
+        });
+
+        machineAssignments.forEach(function (assignment) {
+          const doc = getDocumentByCode(documents, assignment.dokumanKodu);
+          if (!doc) return;
+
+          const docRow = document.createElement('tr');
+          docRow.className = 'bg-gray-50/80';
+          docRow.innerHTML =
+            '<td class="px-4 sm:px-6 py-3"></td>' +
+            '<td colspan="4" class="px-4 sm:px-6 py-3">' +
+              '<div class="rounded-xl border border-gray-100 bg-white px-4 py-3">' +
+                '<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">' +
+                  '<div>' +
+                    '<span class="block font-mono text-xs sm:text-sm font-semibold text-primary">' + escapeHtml(doc.dokumanKodu) + '</span>' +
+                    '<span class="block text-sm text-gray-700 mt-1">' + escapeHtml(doc.dokumanAdi) + ' - ' + escapeHtml(doc.dokumanTuru) + ' / V' + escapeHtml(doc.versiyon) + '</span>' +
+                  '</div>' +
+                  '<div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">' +
+                    '<span class="text-xs text-gray-400">' + escapeHtml(doc.dosyaAdi || '') + '</span>' +
+                    '<button type="button" class="btn-dokuman-kaldir inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-red-600 border border-red-200 hover:bg-red-600 hover:text-white transition-all duration-200" data-kod="' + escapeHtml(doc.dokumanKodu) + '" data-seri-no="' + escapeHtml(machine.seriNo) + '">' +
+                      'Kaldır' +
+                    '</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</td>';
+          machineTableBody.appendChild(docRow);
+        });
+      });
+
+      // Update active triangles (red) on columns with filter
+      Array.from(document.querySelectorAll('.filter-btn')).forEach(btn => {
+        let key = btn.getAttribute('data-filter');
+        if (tableFilters[key]) {
+          btn.classList.add("filter-btn-active");
+        } else {
+          btn.classList.remove("filter-btn-active");
+        }
+      });
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function openModal() {
+      document.getElementById('addMachineForm').reset();
+      populateAltModelSelect('');
+      altModelSelect.innerHTML = '<option value="">Önce model seçin</option>';
+      altModelSelect.disabled = true;
+      modalOverlay.classList.remove('hidden');
+      modalOverlay.classList.add('flex');
+    }
+
+    function closeModal() {
+      modalOverlay.classList.add('hidden');
+      modalOverlay.classList.remove('flex');
+    }
+
+    function openAssignDocumentModal(index) {
+      const visibleMachines = filterMachines(getMachines());
+      const machine = visibleMachines[index];
+      if (!machine) return;
+
+      selectedMachineIndex = getMachines().findIndex(m => m.seriNo === machine.seriNo);
+
+      dokumanKoduInput.value = '';
+      assignMachineInfo.textContent = machine.seriNo + ' - ' + machine.makineModeli + ' / ' + machine.altModel;
+      assignDocumentModalOverlay.classList.remove('hidden');
+      assignDocumentModalOverlay.classList.add('flex');
+      dokumanKoduInput.focus();
+    }
+
+    function closeAssignDocumentModal() {
+      selectedMachineIndex = -1;
+      assignDocumentModalOverlay.classList.add('hidden');
+      assignDocumentModalOverlay.classList.remove('flex');
+    }
+
+    function openRemoveDocumentModal(dokumanKodu, makineSeriNo) {
+      removeTargetKod = dokumanKodu;
+      removeTargetSeriNo = makineSeriNo;
+      removeDokumanKoduInput.value = '';
+      removeDokumanKoduHint.textContent = 'Beklenen: ' + dokumanKodu;
+      removeConfirmBtn.disabled = true;
+      removeDocumentModalOverlay.classList.remove('hidden');
+      removeDocumentModalOverlay.classList.add('flex');
+      removeDokumanKoduInput.focus();
+    }
+
+    function closeRemoveDocumentModal() {
+      removeTargetKod = '';
+      removeTargetSeriNo = '';
+      removeDocumentModalOverlay.classList.add('hidden');
+      removeDocumentModalOverlay.classList.remove('flex');
+    }
+
+    function updateRemoveConfirmState() {
+      removeConfirmBtn.disabled = removeDokumanKoduInput.value.trim() !== removeTargetKod;
+    }
+
+    // --- Filtre Modal fonksiyonları ---
+    function openFilterModal(key) {
+      activeFilterKey = key;
+      activeFilterKeyInput.value = key;
+      filterModalTitle.textContent = {
+        seriNo: "Seri No Filtrele",
+        makineModeli: "Makine Modeli Filtrele",
+        altModel: "Alt Model Filtrele",
+        musteriAdi: "Müşteri Adı Filtrele"
+      }[key] || "Filtrele";
+      filterModalInput.value = tableFilters[key] || "";
+      filterModalOverlay.classList.remove('hidden');
+      filterModalOverlay.classList.add('flex');
+      setTimeout(function () { filterModalInput.focus(); }, 10);
+    }
+    function closeFilterModal() {
+      filterModalOverlay.classList.add('hidden');
+      filterModalOverlay.classList.remove('flex');
+      activeFilterKey = '';
+      activeFilterKeyInput.value = '';
+      if(openFilterBtn) {
+        openFilterBtn.blur();
+      }
+      openFilterBtn = null;
+    }
+    // Filtre üçgenine tıklama eventleri
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.filter-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(evt) {
+          evt.stopPropagation();
+          openFilterBtn = btn;
+          openFilterModal(btn.getAttribute('data-filter'));
+        });
+      });
+    });
+    filterModalBackdrop.addEventListener('click', closeFilterModal);
+
+    // Filtre modaldan onayla
+    filterModalForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const key = activeFilterKeyInput.value;
+      tableFilters[key] = filterModalInput.value.trim();
+      renderTable();
+      closeFilterModal();
+    });
+
+    // Filtreyi sıfırla
+    filterClearBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      const key = activeFilterKeyInput.value;
+      tableFilters[key] = '';
+      filterModalInput.value = '';
+      renderTable();
+      closeFilterModal();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if ((e.key === 'Escape' || e.key === "Esc") && !filterModalOverlay.classList.contains("hidden")) {
+        closeFilterModal();
+      }
+    });
+
+    // Kalan: ekle/kaldır/modal fonksiyonları ve dinleyicileri aynı
+    migrateLegacyAssignments();
+    populateModelSelect();
+    renderTable();
+
+    document.getElementById('openModalBtn').addEventListener('click', openModal);
+    document.getElementById('cancelBtn').addEventListener('click', closeModal);
+    document.getElementById('modalBackdrop').addEventListener('click', closeModal);
+    document.getElementById('assignCancelBtn').addEventListener('click', closeAssignDocumentModal);
+    document.getElementById('assignDocumentModalBackdrop').addEventListener('click', closeAssignDocumentModal);
+    document.getElementById('removeCancelBtn').addEventListener('click', closeRemoveDocumentModal);
+    document.getElementById('removeDocumentModalBackdrop').addEventListener('click', closeRemoveDocumentModal);
+    removeDokumanKoduInput.addEventListener('input', updateRemoveConfirmState);
+
+    makineModeliSelect.addEventListener('change', function () {
+      populateAltModelSelect(this.value);
+    });
+
+    machineTableBody.addEventListener('click', function (e) {
+      const addBtn = e.target.closest('.btn-dokuman-ekle');
+      if (addBtn) {
+        const visibleMachines = filterMachines(getMachines());
+        const index = Array.from(machineTableBody.querySelectorAll(".btn-dokuman-ekle")).indexOf(addBtn);
+        openAssignDocumentModal(index);
+        return;
+      }
+
+      const removeBtn = e.target.closest('.btn-dokuman-kaldir');
+      if (!removeBtn) return;
+
+      openRemoveDocumentModal(
+        removeBtn.getAttribute('data-kod'),
+        removeBtn.getAttribute('data-seri-no')
+      );
+    });
+
+    document.getElementById('assignDocumentForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const machine = getMachines()[selectedMachineIndex];
+      if (!machine) return;
+
+      const dokumanKodu = dokumanKoduInput.value.trim();
+      const documents = getDocuments();
+      const documentExists = documents.some(function (doc) {
+        return doc.dokumanKodu === dokumanKodu;
+      });
+
+      if (!documentExists) {
+        alert('Bu doküman kodu ile kayıt bulunamadı.');
+        return;
+      }
+
+      const assignments = getAssignments();
+      const alreadyAssigned = assignments.some(function (assignment) {
+        return assignment.makineSeriNo === machine.seriNo && assignment.dokumanKodu === dokumanKodu;
+      });
+
+      if (alreadyAssigned) {
+        alert('Bu doküman zaten bu makineye tanımlı.');
+        return;
+      }
+
+      assignments.push({
+        makineSeriNo: machine.seriNo,
+        dokumanKodu: dokumanKodu
+      });
+      saveAssignments(assignments);
+      renderTable();
+      closeAssignDocumentModal();
+    });
+
+    document.getElementById('removeDocumentForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      if (removeDokumanKoduInput.value.trim() !== removeTargetKod) return;
+
+      const assignments = getAssignments();
+      const assignmentIndex = assignments.findIndex(function (assignment) {
+        return assignment.makineSeriNo === removeTargetSeriNo && assignment.dokumanKodu === removeTargetKod;
+      });
+
+      if (assignmentIndex === -1) {
+        closeRemoveDocumentModal();
+        return;
+      }
+
+      assignments.splice(assignmentIndex, 1);
+      saveAssignments(assignments);
+      renderTable();
+      closeRemoveDocumentModal();
+    });
+
+    document.getElementById('addMachineForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const seriNo = document.getElementById('seriNo').value.trim();
+      const makineModeli = makineModeliSelect.value;
+      const altModel = altModelSelect.value;
+      const musteriAdi = document.getElementById('musteriAdi').value.trim();
+
+      const machines = getMachines();
+      const exists = machines.some(function (m) { return m.seriNo === seriNo; });
+
+      if (exists) {
+        alert('Bu seri numarası zaten kayıtlı.');
+        return;
+      }
+
+      machines.push({ seriNo: seriNo, makineModeli: makineModeli, altModel: altModel, musteriAdi: musteriAdi });
+      saveMachines(machines);
+      renderTable();
+      closeModal();
+    });
+
+    // --- Kaldırıldı: Tablo içindeki <input> tabanlı filtre eventleri ---
+    // Input'lar ve eventler artık yok!
+  </script>
+</body>
+</html>
