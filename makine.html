@@ -292,10 +292,13 @@
     </div>
   </div>
 
-  <script>
-    const STORAGE_KEY = 'dolfin_makineler';
-    const DOCUMENT_STORAGE_KEY = 'dolfin_dokumanlar';
-    const ASSIGNMENT_STORAGE_KEY = 'dolfin_makine_dokuman_atamalari';
+  <script type="module">
+    import { DolfinDB } from './firebase-config.js';
+
+    // Firestore'dan yüklenen bellek önbellekleri
+    let machinesCache = [];
+    let documentsCache = [];
+    let assignmentsCache = [];
 
     // Makine Modeli Combobox sabitleri
     const MAKINE_MODELLERI = ['LYM', 'VDL', 'KBN', 'KNV', 'RTS', 'ULT', 'MST', 'PYT'];
@@ -340,44 +343,19 @@
       musteriAdi: ""
     };
 
-    function getMachines() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-      } catch {
-        return [];
-      }
-    }
+    function getMachines() { return machinesCache; }
+    function getDocuments() { return documentsCache; }
+    function getAssignments() { return assignmentsCache; }
 
-    function saveMachines(machines) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(machines));
-    }
-
-    function getDocuments() {
-      try {
-        return JSON.parse(localStorage.getItem(DOCUMENT_STORAGE_KEY)) || [];
-      } catch {
-        return [];
-      }
-    }
-
-    function saveDocuments(documents) {
-      localStorage.setItem(DOCUMENT_STORAGE_KEY, JSON.stringify(documents));
-    }
-
-    function getAssignments() {
-      try {
-        return JSON.parse(localStorage.getItem(ASSIGNMENT_STORAGE_KEY)) || [];
-      } catch {
-        return [];
-      }
-    }
-
-    function saveAssignments(assignments) {
-      localStorage.setItem(ASSIGNMENT_STORAGE_KEY, JSON.stringify(assignments));
-    }
-
-    function migrateLegacyAssignments() {
-      // Burada varsayılan örnek kod vardı ama modelAltModeller kaldırıldı.
+    async function loadAll() {
+      const [machines, documents, assignments] = await Promise.all([
+        DolfinDB.getMachines(),
+        DolfinDB.getDocuments(),
+        DolfinDB.getAssignments()
+      ]);
+      machinesCache = machines;
+      documentsCache = documents;
+      assignmentsCache = assignments;
     }
 
     function getDocumentByCode(documents, dokumanKodu) {
@@ -612,6 +590,7 @@
 
     // Kalan: ekle/kaldır/modal fonksiyonları ve dinleyicileri aynı
     populateModelSelect();
+    await loadAll();
     renderTable();
 
     document.getElementById('openModalBtn').addEventListener('click', openModal);
@@ -645,7 +624,7 @@
       );
     });
 
-    document.getElementById('assignDocumentForm').addEventListener('submit', function (e) {
+    document.getElementById('assignDocumentForm').addEventListener('submit', async function (e) {
       e.preventDefault();
 
       const machine = getMachines()[selectedMachineIndex];
@@ -662,8 +641,7 @@
         return;
       }
 
-      const assignments = getAssignments();
-      const alreadyAssigned = assignments.some(function (assignment) {
+      const alreadyAssigned = assignmentsCache.some(function (assignment) {
         return assignment.makineSeriNo === machine.seriNo && assignment.dokumanKodu === dokumanKodu;
       });
 
@@ -672,37 +650,44 @@
         return;
       }
 
-      assignments.push({
-        makineSeriNo: machine.seriNo,
-        dokumanKodu: dokumanKodu
-      });
-      saveAssignments(assignments);
+      const kayit = { makineSeriNo: machine.seriNo, dokumanKodu: dokumanKodu };
+      try {
+        const id = await DolfinDB.addAssignment(kayit);
+        assignmentsCache.push(Object.assign({ _id: id }, kayit));
+      } catch (err) {
+        alert('Kayıt sırasında hata oluştu. Bağlantınızı kontrol edin.');
+        return;
+      }
       renderTable();
       closeAssignDocumentModal();
     });
 
-    document.getElementById('removeDocumentForm').addEventListener('submit', function (e) {
+    document.getElementById('removeDocumentForm').addEventListener('submit', async function (e) {
       e.preventDefault();
 
       if (removeDokumanKoduInput.value.trim() !== removeTargetKod) return;
 
-      const assignments = getAssignments();
-      const assignmentIndex = assignments.findIndex(function (assignment) {
+      const target = assignmentsCache.find(function (assignment) {
         return assignment.makineSeriNo === removeTargetSeriNo && assignment.dokumanKodu === removeTargetKod;
       });
 
-      if (assignmentIndex === -1) {
+      if (!target) {
         closeRemoveDocumentModal();
         return;
       }
 
-      assignments.splice(assignmentIndex, 1);
-      saveAssignments(assignments);
+      try {
+        await DolfinDB.deleteAssignment(target._id);
+        assignmentsCache = assignmentsCache.filter(function (a) { return a !== target; });
+      } catch (err) {
+        alert('Silme sırasında hata oluştu.');
+        return;
+      }
       renderTable();
       closeRemoveDocumentModal();
     });
 
-    document.getElementById('addMachineForm').addEventListener('submit', function (e) {
+    document.getElementById('addMachineForm').addEventListener('submit', async function (e) {
       e.preventDefault();
 
       const seriNo = document.getElementById('seriNo').value.trim();
@@ -710,16 +695,21 @@
       const altModel = altModelInput.value;
       const musteriAdi = document.getElementById('musteriAdi').value.trim();
 
-      const machines = getMachines();
-      const exists = machines.some(function (m) { return m.seriNo === seriNo; });
+      const exists = machinesCache.some(function (m) { return m.seriNo === seriNo; });
 
       if (exists) {
         alert('Bu seri numarası zaten kayıtlı.');
         return;
       }
 
-      machines.push({ seriNo: seriNo, makineModeli: makineModeli, altModel: altModel, musteriAdi: musteriAdi });
-      saveMachines(machines);
+      const kayit = { seriNo: seriNo, makineModeli: makineModeli, altModel: altModel, musteriAdi: musteriAdi };
+      try {
+        const id = await DolfinDB.addMachine(kayit);
+        machinesCache.push(Object.assign({ _id: id }, kayit));
+      } catch (err) {
+        alert('Kayıt sırasında hata oluştu. Bağlantınızı kontrol edin.');
+        return;
+      }
       renderTable();
       closeModal();
     });

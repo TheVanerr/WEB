@@ -256,9 +256,12 @@
     </div>
   </div>
 
-  <script>
-    const STORAGE_KEY = 'dolfin_dokumanlar';
-    const ASSIGNMENT_STORAGE_KEY = 'dolfin_makine_dokuman_atamalari';
+  <script type="module">
+    import { DolfinDB } from './firebase-config.js';
+
+    // Firestore'dan yüklenen bellek önbellekleri
+    let documentsCache = [];
+    let assignmentsCache = [];
 
     const dokumanTurleri = {
       'Kullanım Kılavuzu': 'KK',
@@ -302,28 +305,16 @@
     let filterOptionsCache = {};
     let lastFilterCol = null;
 
-    function getDocuments() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-      } catch {
-        return [];
-      }
-    }
+    function getDocuments() { return documentsCache; }
+    function getAssignments() { return assignmentsCache; }
 
-    function saveDocuments(documents) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
-    }
-
-    function getAssignments() {
-      try {
-        return JSON.parse(localStorage.getItem(ASSIGNMENT_STORAGE_KEY)) || [];
-      } catch {
-        return [];
-      }
-    }
-
-    function saveAssignments(assignments) {
-      localStorage.setItem(ASSIGNMENT_STORAGE_KEY, JSON.stringify(assignments));
+    async function loadAll() {
+      const [documents, assignments] = await Promise.all([
+        DolfinDB.getDocuments(),
+        DolfinDB.getAssignments()
+      ]);
+      documentsCache = documents;
+      assignmentsCache = assignments;
     }
 
     function getSelectedMachine() {
@@ -562,6 +553,7 @@
 
     // INIT
     populateTurSelect();
+    await loadAll();
     renderTable();
 
     // Add Document Modal events
@@ -623,11 +615,14 @@
       if (indirBtn) {
         const index = parseInt(indirBtn.getAttribute('data-index'), 10);
         const doc = getDocuments()[index];
-        if (!doc || !doc.dosyaVerisi) return;
+        const url = doc && (doc.dosyaUrl || doc.dosyaVerisi);
+        if (!url) return;
 
         const link = document.createElement('a');
-        link.href = doc.dosyaVerisi;
+        link.href = url;
         link.download = doc.dosyaAdi;
+        link.target = '_blank';
+        link.rel = 'noopener';
         link.click();
         return;
       }
@@ -642,19 +637,28 @@
       openDeleteModal(index, doc.dokumanKodu);
     });
 
-    document.getElementById('deleteDocumentForm').addEventListener('submit', function (e) {
+    document.getElementById('deleteDocumentForm').addEventListener('submit', async function (e) {
       e.preventDefault();
 
       if (deleteKodInput.value.trim() !== deleteTargetKod) return;
 
-      const documents = getDocuments();
-      if (deleteTargetIndex < 0 || deleteTargetIndex >= documents.length) {
+      if (deleteTargetIndex < 0 || deleteTargetIndex >= documentsCache.length) {
         closeDeleteModal();
         return;
       }
 
-      documents.splice(deleteTargetIndex, 1);
-      saveDocuments(documents);
+      const target = documentsCache[deleteTargetIndex];
+      try {
+        await DolfinDB.deleteDocument(target._id);
+        if (target.dosyaYolu) {
+          await DolfinDB.deleteFile(target.dosyaYolu);
+        }
+        documentsCache.splice(deleteTargetIndex, 1);
+      } catch (err) {
+        alert('Silme sırasında hata oluştu.');
+        return;
+      }
+      filterOptionsCache._dirty = true;
       renderTable();
       closeDeleteModal();
     });
@@ -673,25 +677,29 @@
         return;
       }
 
-      if (dosya.size > 3 * 1024 * 1024) {
-        alert('Dosya boyutu 3 MB\'dan küçük olmalıdır.');
+      if (dosya.size > 25 * 1024 * 1024) {
+        alert('Dosya boyutu 25 MB\'dan küçük olmalıdır.');
         return;
       }
 
       const dokumanKodu = generateDokumanKodu(dokumanAdi, dokumanTuru, versiyon);
-      const documents = getDocuments();
-      const exists = documents.some(function (d) { return d.dokumanKodu === dokumanKodu; });
+      const exists = documentsCache.some(function (d) { return d.dokumanKodu === dokumanKodu; });
 
       if (exists) {
         alert('Bu doküman kodu zaten kayıtlı. Farklı bir ad veya versiyon seçin.');
         return;
       }
 
-      let dosyaVerisi;
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Yükleniyor...'; }
+
+      const dosyaYolu = 'documents/' + dokumanKodu + '/' + Date.now() + '_' + dosya.name;
+      let dosyaUrl;
       try {
-        dosyaVerisi = await readFileAsDataUrl(dosya);
-      } catch {
-        alert('Dosya okunamadı. Lütfen tekrar deneyin.');
+        dosyaUrl = await DolfinDB.uploadFile(dosyaYolu, dosya);
+      } catch (err) {
+        alert('Dosya yüklenemedi. Bağlantınızı kontrol edin.');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Tamam'; }
         return;
       }
 
@@ -704,31 +712,33 @@
         dosyaAdi: dosya.name,
         dosyaBoyutu: formatFileSize(dosya.size),
         dosyaTipi: dosya.type,
-        dosyaVerisi: dosyaVerisi,
+        dosyaUrl: dosyaUrl,
+        dosyaYolu: dosyaYolu,
         olusturmaTarihi: new Date().toISOString()
       };
 
-      documents.push(kayit);
+      try {
+        const id = await DolfinDB.addDocument(kayit);
+        documentsCache.push(Object.assign({ _id: id }, kayit));
 
-      // After add, the options changed
-      filterOptionsCache._dirty = true;
-
-      if (machine) {
-        const assignments = getAssignments();
-        const alreadyAssigned = assignments.some(function (assignment) {
-          return assignment.makineSeriNo === machine.seriNo && assignment.dokumanKodu === dokumanKodu;
-        });
-
-        if (!alreadyAssigned) {
-          assignments.push({
-            makineSeriNo: machine.seriNo,
-            dokumanKodu: dokumanKodu
+        if (machine) {
+          const alreadyAssigned = assignmentsCache.some(function (assignment) {
+            return assignment.makineSeriNo === machine.seriNo && assignment.dokumanKodu === dokumanKodu;
           });
-          saveAssignments(assignments);
+          if (!alreadyAssigned) {
+            const atama = { makineSeriNo: machine.seriNo, dokumanKodu: dokumanKodu };
+            const atamaId = await DolfinDB.addAssignment(atama);
+            assignmentsCache.push(Object.assign({ _id: atamaId }, atama));
+          }
         }
+      } catch (err) {
+        alert('Kayıt sırasında hata oluştu.');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Tamam'; }
+        return;
       }
 
-      saveDocuments(documents);
+      filterOptionsCache._dirty = true;
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Tamam'; }
       renderTable();
       closeModal();
     });

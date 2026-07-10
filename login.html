@@ -242,14 +242,29 @@
       </div>
     </main>
   </div>
-  <script>
-    const MACHINE_KEY     = 'dolfin_makineler';
-    const DOCUMENT_KEY    = 'dolfin_dokumanlar';
-    const ASSIGNMENT_KEY  = 'dolfin_makine_dokuman_atamalari';
+  <script type="module">
+    import { DolfinDB } from './firebase-config.js';
 
-    function getMachines()    { try { return JSON.parse(localStorage.getItem(MACHINE_KEY)) || []; } catch { return []; } }
-    function getDocuments()   { try { return JSON.parse(localStorage.getItem(DOCUMENT_KEY)) || []; } catch { return []; } }
-    function getAssignments() { try { return JSON.parse(localStorage.getItem(ASSIGNMENT_KEY)) || []; } catch { return []; } }
+    let machinesCache = [];
+    let documentsCache = [];
+    let assignmentsCache = [];
+
+    function getMachines()    { return machinesCache; }
+    function getDocuments()   { return documentsCache; }
+    function getAssignments() { return assignmentsCache; }
+
+    async function loadAll() {
+      const [machines, documents, assignments] = await Promise.all([
+        DolfinDB.getMachines(),
+        DolfinDB.getDocuments(),
+        DolfinDB.getAssignments()
+      ]);
+      machinesCache = machines;
+      documentsCache = documents;
+      assignmentsCache = assignments;
+    }
+
+    const ready = loadAll();
 
     function escapeHtml(text) {
       const div = document.createElement('div');
@@ -268,7 +283,7 @@
     }
 
     /* ── LOGIN ── */
-    document.getElementById('loginForm').addEventListener('submit', function (e) {
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const seriNo = document.getElementById('seriNoInput').value.trim();
       const model  = document.getElementById('makineModeliInput').value.trim();
@@ -280,6 +295,7 @@
         return;
       }
 
+      await ready;
       const machines = getMachines();
       const machine  = machines.find(function (m) {
         return m.seriNo === seriNo && m.makineModeli.toLowerCase() === model.toLowerCase();
@@ -397,11 +413,14 @@
 
       const documents = getDocuments();
       const doc = documents.find(function (d) { return d.dokumanKodu === btn.getAttribute('data-kod'); });
-      if (!doc || !doc.dosyaVerisi) return;
+      const url = doc && (doc.dosyaUrl || doc.dosyaVerisi);
+      if (!url) return;
 
       const link = document.createElement('a');
-      link.href = doc.dosyaVerisi;
+      link.href = url;
       link.download = doc.dosyaAdi;
+      link.target = '_blank';
+      link.rel = 'noopener';
       link.click();
     });
   </script>
