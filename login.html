@@ -308,8 +308,12 @@
 
       await ready;
       const machines = getMachines();
+      const modelInput = model.toLowerCase();
       const machine  = machines.find(function (m) {
-        return m.seriNo === seriNo && m.makineModeli.toLowerCase() === model.toLowerCase();
+        if (m.seriNo !== seriNo) return false;
+        const anaModel = (m.makineModeli || '').toLowerCase();
+        const altModel = (m.altModel || '').toLowerCase();
+        return anaModel === modelInput || altModel === modelInput;
       });
 
       if (!machine) {
