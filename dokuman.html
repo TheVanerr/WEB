@@ -195,7 +195,7 @@
             accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
             class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
           >
-          <p class="text-xs text-gray-400 mt-1">PDF, Word, Excel veya görsel dosyaları yükleyebilirsiniz.</p>
+          <p class="text-xs text-gray-400 mt-1">PDF, Word, Excel veya görsel. Maks. 700 KB (ücretsiz plan).</p>
         </div>
         <div class="flex gap-3 pt-2">
           <button
@@ -657,9 +657,6 @@
       const target = documentsCache[deleteTargetIndex];
       try {
         await DolfinDB.deleteDocument(target._id);
-        if (target.dosyaYolu) {
-          await DolfinDB.deleteFile(target.dosyaYolu);
-        }
         documentsCache.splice(deleteTargetIndex, 1);
       } catch (err) {
         alert('Silme sırasında hata oluştu.');
@@ -684,8 +681,8 @@
         return;
       }
 
-      if (dosya.size > 25 * 1024 * 1024) {
-        alert('Dosya boyutu 25 MB\'dan küçük olmalıdır.');
+      if (dosya.size > 700 * 1024) {
+        alert('Dosya boyutu 700 KB\'dan küçük olmalıdır (ücretsiz plan limiti).');
         return;
       }
 
@@ -698,14 +695,13 @@
       }
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
-      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Yükleniyor...'; }
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Kaydediliyor...'; }
 
-      const dosyaYolu = 'documents/' + dokumanKodu + '/' + Date.now() + '_' + dosya.name;
-      let dosyaUrl;
+      let dosyaVerisi;
       try {
-        dosyaUrl = await DolfinDB.uploadFile(dosyaYolu, dosya);
+        dosyaVerisi = await readFileAsDataUrl(dosya);
       } catch (err) {
-        alert('Dosya yüklenemedi. Bağlantınızı kontrol edin.');
+        alert('Dosya okunamadı. Lütfen tekrar deneyin.');
         if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Tamam'; }
         return;
       }
@@ -719,8 +715,7 @@
         dosyaAdi: dosya.name,
         dosyaBoyutu: formatFileSize(dosya.size),
         dosyaTipi: dosya.type,
-        dosyaUrl: dosyaUrl,
-        dosyaYolu: dosyaYolu,
+        dosyaVerisi: dosyaVerisi,
         olusturmaTarihi: new Date().toISOString()
       };
 

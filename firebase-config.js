@@ -1,4 +1,5 @@
 // Firebase yapılandırması ve veri katmanı (CDN, düz HTML projeleri için)
+// Ücretsiz plan: sadece Firestore + Anonymous Auth (Storage kullanılmıyor)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import {
   getFirestore,
@@ -8,13 +9,6 @@ import {
   deleteDoc,
   doc
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js";
 import {
   getAuth,
   signInAnonymously
@@ -31,7 +25,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
 const auth = getAuth(app);
 
 const COL = {
@@ -51,7 +44,7 @@ function formatFirebaseError(err) {
     return 'Domain yetkisiz. Authentication → Settings → Authorized domains → thevanerr.github.io ekleyin';
   }
   if (code === 'permission-denied') {
-    return 'Firestore izni yok. Firestore Database → Rules güncelleyin (Storage değil!)';
+    return 'Firestore izni yok. Firestore Database → Rules güncelleyin';
   }
   return (err && err.message) ? err.message : 'Bilinmeyen Firebase hatası';
 }
@@ -85,22 +78,6 @@ async function removeById(colName, id) {
   await deleteDoc(doc(db, colName, id));
 }
 
-async function uploadFile(path, file) {
-  await ensureAuth();
-  const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, file);
-  return await getDownloadURL(storageRef);
-}
-
-async function deleteFile(path) {
-  await ensureAuth();
-  try {
-    await deleteObject(ref(storage, path));
-  } catch (e) {
-    // Dosya yoksa ya da silinemezse sessizce geç
-  }
-}
-
 const DolfinDB = {
   ready: ensureAuth,
   getMachines() { return fetchAll(COL.machines); },
@@ -111,9 +88,7 @@ const DolfinDB = {
   addAssignment(a) { return add(COL.assignments, a); },
   deleteMachine(id) { return removeById(COL.machines, id); },
   deleteDocument(id) { return removeById(COL.documents, id); },
-  deleteAssignment(id) { return removeById(COL.assignments, id); },
-  uploadFile: uploadFile,
-  deleteFile: deleteFile
+  deleteAssignment(id) { return removeById(COL.assignments, id); }
 };
 
 export { DolfinDB, formatFirebaseError };
