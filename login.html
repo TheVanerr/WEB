@@ -275,6 +275,38 @@
       }
     }
 
+    function normalizeSeriNo(val) {
+      return String(val == null ? '' : val).trim();
+    }
+
+    function normalizeModel(val) {
+      return String(val == null ? '' : val).trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function seriNoMatches(stored, input) {
+      const a = normalizeSeriNo(stored);
+      const b = normalizeSeriNo(input);
+      if (a === b) return true;
+      if (/^\d+$/.test(a) && /^\d+$/.test(b)) {
+        return Number(a) === Number(b);
+      }
+      return false;
+    }
+
+    function modelMatches(machine, input) {
+      const modelInput = normalizeModel(input);
+      if (!modelInput) return false;
+      const anaModel = normalizeModel(machine.makineModeli);
+      const altModel = normalizeModel(machine.altModel);
+      return anaModel === modelInput || altModel === modelInput;
+    }
+
+    function findMachine(seriNo, model) {
+      return machinesCache.find(function (m) {
+        return seriNoMatches(m.seriNo, seriNo) && modelMatches(m, model);
+      });
+    }
+
     const ready = loadAll();
 
     function escapeHtml(text) {
@@ -306,17 +338,27 @@
         return;
       }
 
-      await ready;
-      const machines = getMachines();
-      const modelInput = model.toLowerCase();
-      const machine  = machines.find(function (m) {
-        if (m.seriNo !== seriNo) return false;
-        const anaModel = (m.makineModeli || '').toLowerCase();
-        const altModel = (m.altModel || '').toLowerCase();
-        return anaModel === modelInput || altModel === modelInput;
-      });
+      try {
+        await DolfinDB.ready();
+        machinesCache = await DolfinDB.getMachines();
+        documentsCache = await DolfinDB.getDocuments();
+        assignmentsCache = await DolfinDB.getAssignments();
+      } catch (err) {
+        errEl.textContent = formatFirebaseError(err);
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      if (machinesCache.length === 0) {
+        errEl.textContent = 'Kayıtlı makine bulunamadı. Admin panelinden makine ekleyin.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      const machine = findMachine(seriNo, model);
 
       if (!machine) {
+        errEl.textContent = 'Seri no veya makine modeli hatalı.';
         errEl.classList.remove('hidden');
         return;
       }

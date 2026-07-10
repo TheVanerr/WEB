@@ -699,7 +699,7 @@
 
       const seriNo = document.getElementById('seriNo').value.trim();
       const makineModeli = makineModeliSelect.value;
-      const altModel = altModelInput.value;
+      const altModel = altModelInput.value.trim();
       const musteriAdi = document.getElementById('musteriAdi').value.trim();
 
       const exists = machinesCache.some(function (m) { return m.seriNo === seriNo; });
