@@ -309,12 +309,19 @@
     function getAssignments() { return assignmentsCache; }
 
     async function loadAll() {
-      const [documents, assignments] = await Promise.all([
-        DolfinDB.getDocuments(),
-        DolfinDB.getAssignments()
-      ]);
-      documentsCache = documents;
-      assignmentsCache = assignments;
+      try {
+        await DolfinDB.ready();
+        const [documents, assignments] = await Promise.all([
+          DolfinDB.getDocuments(),
+          DolfinDB.getAssignments()
+        ]);
+        documentsCache = documents;
+        assignmentsCache = assignments;
+      } catch (err) {
+        console.error('Firebase yükleme hatası:', err);
+        alert('Veritabanına bağlanılamadı. Firebase kurallarını kontrol edin.');
+        throw err;
+      }
     }
 
     function getSelectedMachine() {

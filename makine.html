@@ -348,14 +348,21 @@
     function getAssignments() { return assignmentsCache; }
 
     async function loadAll() {
-      const [machines, documents, assignments] = await Promise.all([
-        DolfinDB.getMachines(),
-        DolfinDB.getDocuments(),
-        DolfinDB.getAssignments()
-      ]);
-      machinesCache = machines;
-      documentsCache = documents;
-      assignmentsCache = assignments;
+      try {
+        await DolfinDB.ready();
+        const [machines, documents, assignments] = await Promise.all([
+          DolfinDB.getMachines(),
+          DolfinDB.getDocuments(),
+          DolfinDB.getAssignments()
+        ]);
+        machinesCache = machines;
+        documentsCache = documents;
+        assignmentsCache = assignments;
+      } catch (err) {
+        console.error('Firebase yükleme hatası:', err);
+        alert('Veritabanına bağlanılamadı. Firebase kurallarını kontrol edin.');
+        throw err;
+      }
     }
 
     function getDocumentByCode(documents, dokumanKodu) {

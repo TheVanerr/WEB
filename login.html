@@ -254,14 +254,25 @@
     function getAssignments() { return assignmentsCache; }
 
     async function loadAll() {
-      const [machines, documents, assignments] = await Promise.all([
-        DolfinDB.getMachines(),
-        DolfinDB.getDocuments(),
-        DolfinDB.getAssignments()
-      ]);
-      machinesCache = machines;
-      documentsCache = documents;
-      assignmentsCache = assignments;
+      try {
+        await DolfinDB.ready();
+        const [machines, documents, assignments] = await Promise.all([
+          DolfinDB.getMachines(),
+          DolfinDB.getDocuments(),
+          DolfinDB.getAssignments()
+        ]);
+        machinesCache = machines;
+        documentsCache = documents;
+        assignmentsCache = assignments;
+      } catch (err) {
+        console.error('Firebase yükleme hatası:', err);
+        const errEl = document.getElementById('loginError');
+        if (errEl) {
+          errEl.textContent = 'Veritabanına bağlanılamadı. Firebase kurallarını kontrol edin.';
+          errEl.classList.remove('hidden');
+        }
+        throw err;
+      }
     }
 
     const ready = loadAll();
