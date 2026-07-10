@@ -257,7 +257,7 @@
   </div>
 
   <script type="module">
-    import { DolfinDB } from './firebase-config.js';
+    import { DolfinDB, formatFirebaseError } from './firebase-config.js';
 
     // Firestore'dan yüklenen bellek önbellekleri
     let documentsCache = [];
@@ -319,7 +319,7 @@
         assignmentsCache = assignments;
       } catch (err) {
         console.error('Firebase yükleme hatası:', err);
-        alert('Veritabanına bağlanılamadı. Firebase kurallarını kontrol edin.');
+        alert(formatFirebaseError(err));
         throw err;
       }
     }

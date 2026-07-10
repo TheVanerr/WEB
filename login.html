@@ -243,7 +243,7 @@
     </main>
   </div>
   <script type="module">
-    import { DolfinDB } from './firebase-config.js';
+    import { DolfinDB, formatFirebaseError } from './firebase-config.js';
 
     let machinesCache = [];
     let documentsCache = [];
@@ -268,7 +268,7 @@
         console.error('Firebase yükleme hatası:', err);
         const errEl = document.getElementById('loginError');
         if (errEl) {
-          errEl.textContent = 'Veritabanına bağlanılamadı. Firebase kurallarını kontrol edin.';
+          errEl.textContent = formatFirebaseError(err);
           errEl.classList.remove('hidden');
         }
         throw err;

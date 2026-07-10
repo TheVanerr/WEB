@@ -42,11 +42,25 @@ const COL = {
 
 let authPromise = null;
 
+function formatFirebaseError(err) {
+  const code = err && err.code ? err.code : '';
+  if (code === 'auth/operation-not-allowed') {
+    return 'Anonymous Auth kapalı. Firebase Console → Authentication → Sign-in method → Anonymous → Enable';
+  }
+  if (code === 'auth/unauthorized-domain') {
+    return 'Domain yetkisiz. Authentication → Settings → Authorized domains → thevanerr.github.io ekleyin';
+  }
+  if (code === 'permission-denied') {
+    return 'Firestore izni yok. Firestore Database → Rules güncelleyin (Storage değil!)';
+  }
+  return (err && err.message) ? err.message : 'Bilinmeyen Firebase hatası';
+}
+
 function ensureAuth() {
   if (!authPromise) {
     authPromise = signInAnonymously(auth).catch(function (err) {
       authPromise = null;
-      throw err;
+      throw new Error(formatFirebaseError(err));
     });
   }
   return authPromise;
@@ -102,4 +116,4 @@ const DolfinDB = {
   deleteFile: deleteFile
 };
 
-export { DolfinDB };
+export { DolfinDB, formatFirebaseError };
