@@ -195,7 +195,7 @@
             accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
             class="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
           >
-          <p class="text-xs text-gray-400 mt-1">PDF, Word, Excel veya görsel. Maks. 700 KB (ücretsiz plan).</p>
+          <p class="text-xs text-gray-400 mt-1">PDF, Word, Excel veya görsel. Maks. 25 MB.</p>
         </div>
         <div class="flex gap-3 pt-2">
           <button
@@ -257,7 +257,7 @@
   </div>
 
   <script type="module">
-    import { DolfinDB, formatFirebaseError } from './firebase-config.js';
+    import { DolfinDB, formatFirebaseError } from './api.js';
 
     // Firestore'dan yüklenen bellek önbellekleri
     let documentsCache = [];
@@ -681,8 +681,8 @@
         return;
       }
 
-      if (dosya.size > 700 * 1024) {
-        alert('Dosya boyutu 700 KB\'dan küçük olmalıdır (ücretsiz plan limiti).');
+      if (dosya.size > 25 * 1024 * 1024) {
+        alert('Dosya boyutu 25 MB\'dan küçük olmalıdır.');
         return;
       }
 
@@ -697,11 +697,11 @@
       const submitBtn = e.target.querySelector('button[type="submit"]');
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Kaydediliyor...'; }
 
-      let dosyaVerisi;
+      let uploaded;
       try {
-        dosyaVerisi = await readFileAsDataUrl(dosya);
+        uploaded = await DolfinDB.uploadFile(dosya, dokumanKodu);
       } catch (err) {
-        alert('Dosya okunamadı. Lütfen tekrar deneyin.');
+        alert('Dosya yüklenemedi. Lütfen tekrar deneyin.');
         if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Tamam'; }
         return;
       }
@@ -715,13 +715,13 @@
         dosyaAdi: dosya.name,
         dosyaBoyutu: formatFileSize(dosya.size),
         dosyaTipi: dosya.type,
-        dosyaVerisi: dosyaVerisi,
+        r2Key: uploaded.r2Key,
         olusturmaTarihi: new Date().toISOString()
       };
 
       try {
         const id = await DolfinDB.addDocument(kayit);
-        documentsCache.push(Object.assign({ _id: id }, kayit));
+        documentsCache.push(Object.assign({ _id: id, dosyaUrl: uploaded.dosyaUrl }, kayit));
 
         if (machine) {
           const alreadyAssigned = assignmentsCache.some(function (assignment) {

@@ -1,0 +1,5 @@
+// Admin: atama kaldır.
+export async function onRequestDelete({ params, env }) {
+  await env.DB.prepare('DELETE FROM assignments WHERE id = ?').bind(params.id).run();
+  return new Response(null, { status: 204 });
+}
